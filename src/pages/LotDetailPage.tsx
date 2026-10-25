@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lots, bids, wallet } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
@@ -11,7 +11,43 @@ import type { Bid } from "@/lib/api";
 
 function formatCents(cents: string | null | undefined): string {
   if (!cents) return "—";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(cents) / 100);
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+    Number(cents) / 100,
+  );
+}
+
+function useCountdown(endsAt: string | undefined) {
+  const [remaining, setRemaining] = useState(0);
+  useEffect(() => {
+    if (!endsAt) return;
+    const update = () => setRemaining(Math.max(0, new Date(endsAt).getTime() - Date.now()));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [endsAt]);
+  return remaining;
+}
+
+function formatMs(ms: number): string {
+  const totalSecs = Math.floor(ms / 1000);
+  const h = Math.floor(totalSecs / 3600);
+  const m = Math.floor((totalSecs % 3600) / 60);
+  const s = totalSecs % 60;
+  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+}
+
+const BID_ERROR_MESSAGES: Record<string, string> = {
+  ALREADY_LEADING: "Você já está liderando este lote",
+  BID_TOO_LOW: "Lance abaixo do mínimo permitido",
+  INSUFFICIENT_BALANCE: "Saldo insuficiente — deposite mais na carteira",
+  LOT_NOT_LIVE: "Lote não está ao vivo",
+};
+
+function friendlyBidError(raw: string): string {
+  for (const [code, msg] of Object.entries(BID_ERROR_MESSAGES)) {
+    if (raw.includes(code)) return msg;
+  }
+  return raw;
 }
 
 export function LotDetailPage() {
@@ -19,7 +55,7 @@ export function LotDetailPage() {
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
   const [bidAmount, setBidAmount] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [bidError, setBidError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [liveBids, setLiveBids] = useState<Bid[]>([]);
   const sseRef = useRef<EventSource | null>(null);
@@ -30,6 +66,9 @@ export function LotDetailPage() {
     refetchInterval: 10_000,
     enabled: !!id,
   });
+
+  const remaining = useCountdown(lot?.endsAt);
+  const isUrgent = remaining > 0 && remaining < 2 * 60 * 1000;
 
   const { data: initialBids } = useQuery({
     queryKey: ["bids", id],
@@ -44,13 +83,17 @@ export function LotDetailPage() {
   useEffect(() => {
     if (!id || lot?.status !== "LIVE") return;
     const es = new EventSource(`/api/lots/${id}/bids/events`, { withCredentials: true });
-    es.onmessage = (e) => {
+    es.onmessage = (e: MessageEvent<string>) => {
       const bid = JSON.parse(e.data) as Bid;
       setLiveBids((prev) => [...prev, bid]);
       void qc.invalidateQueries({ queryKey: ["lot", id] });
+      void qc.invalidateQueries({ queryKey: ["position", id] });
     };
     sseRef.current = es;
-    return () => { es.close(); sseRef.current = null; };
+    return () => {
+      es.close();
+      sseRef.current = null;
+    };
   }, [id, lot?.status, qc]);
 
   const { data: balance } = useQuery({
@@ -59,24 +102,35 @@ export function LotDetailPage() {
     enabled: !!user && user.role === "BIDDER",
   });
 
+  const { data: position } = useQuery({
+    queryKey: ["position", id],
+    queryFn: () => lots.getPosition(id!),
+    enabled: !!id && !!user && user.role === "BIDDER" && lot?.status === "LIVE",
+    refetchInterval: 10_000,
+  });
+
   async function handlePlaceBid(e: React.FormEvent) {
     e.preventDefault();
     if (!id) return;
-    setError(null);
+    setBidError(null);
     setPlacing(true);
     try {
       const cents = Math.round(parseFloat(bidAmount) * 100);
       await bids.place(id, cents);
       setBidAmount("");
       void qc.invalidateQueries({ queryKey: ["lot", id] });
+      void qc.invalidateQueries({ queryKey: ["position", id] });
+      void qc.invalidateQueries({ queryKey: ["wallet-balance"] });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to place bid");
+      setBidError(
+        friendlyBidError(err instanceof Error ? err.message : "Erro ao dar lance"),
+      );
     } finally {
       setPlacing(false);
     }
   }
 
-  if (!lot) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
+  if (!lot) return <div className="p-8 text-center text-muted-foreground">Carregando…</div>;
 
   const minNext = lot.currentBidCents
     ? Number(lot.currentBidCents) + Number(lot.minIncrementCents)
@@ -97,25 +151,58 @@ export function LotDetailPage() {
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Current Price</p>
-            <p className="text-2xl font-bold">{formatCents(lot.currentBidCents ?? lot.startingBidCents)}</p>
+            <p className="text-xs text-muted-foreground">Lance atual</p>
+            <p className="text-2xl font-bold">
+              {formatCents(lot.currentBidCents ?? lot.startingBidCents)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">{lot.bidCount} lance(s)</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Ends At</p>
-            <p className="text-sm font-semibold">{new Date(lot.endsAt).toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground">Encerra em</p>
+            {lot.status === "LIVE" && remaining > 0 ? (
+              <p className={`text-2xl font-bold tabular-nums ${isUrgent ? "text-destructive" : ""}`}>
+                {formatMs(remaining)}
+              </p>
+            ) : (
+              <p className="text-sm font-semibold">{new Date(lot.endsAt).toLocaleString("pt-BR")}</p>
+            )}
           </CardContent>
         </Card>
       </div>
 
+      {user?.role === "BIDDER" && lot.status === "LIVE" && position && (
+        <div
+          className={`rounded border px-4 py-3 text-sm font-medium ${
+            position.isLeading
+              ? "border-green-600 bg-green-50 text-green-800"
+              : "border-orange-500 bg-orange-50 text-orange-800"
+          }`}
+        >
+          {position.isLeading ? (
+            <span>✓ Você está ganhando este lote</span>
+          ) : (
+            <span>
+              Você foi superado —{" "}
+              {position.gapToLeadCents
+                ? `faltam ${formatCents(position.gapToLeadCents)} para liderar`
+                : "dê um lance para participar"}
+            </span>
+          )}
+        </div>
+      )}
+
       {user?.role === "BIDDER" && lot.status === "LIVE" && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Place a Bid</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Dar lance</CardTitle>
+          </CardHeader>
           <CardContent>
             {balance && (
               <p className="text-sm text-muted-foreground mb-3">
-                Available: {formatCents(balance.availableCents)} · Min next: {formatCents(String(minNext))}
+                Disponível: {formatCents(balance.availableCents)} · Mínimo:{" "}
+                {formatCents(String(minNext))}
               </p>
             )}
             <form onSubmit={handlePlaceBid} className="flex gap-2">
@@ -123,30 +210,45 @@ export function LotDetailPage() {
                 type="number"
                 step="0.01"
                 min={(minNext / 100).toFixed(2)}
-                placeholder={`Min $${(minNext / 100).toFixed(2)}`}
+                placeholder={`Mín. R$ ${(minNext / 100).toFixed(2)}`}
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
                 required
               />
               <Button type="submit" disabled={placing}>
-                {placing ? "…" : "Bid"}
+                {placing ? "…" : "Lançar"}
               </Button>
             </form>
-            {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+            {bidError && <p className="text-sm text-destructive mt-2">{bidError}</p>}
           </CardContent>
         </Card>
       )}
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Bid History ({liveBids.length})</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Histórico de lances ({liveBids.length})</CardTitle>
+          <Link
+            to={`/audit/${lot.id}`}
+            className="text-xs text-muted-foreground underline hover:text-primary"
+          >
+            Auditar cadeia
+          </Link>
+        </CardHeader>
         <CardContent>
-          {liveBids.length === 0 && <p className="text-sm text-muted-foreground">No bids yet.</p>}
+          {liveBids.length === 0 && (
+            <p className="text-sm text-muted-foreground">Nenhum lance ainda.</p>
+          )}
           <div className="space-y-2">
             {[...liveBids].reverse().map((bid) => (
-              <div key={bid.id} className="flex justify-between text-sm border-b border-border pb-1">
+              <div
+                key={bid.id}
+                className="flex justify-between text-sm border-b border-border pb-1"
+              >
                 <span className="text-muted-foreground">{bid.pseudonym}</span>
                 <span className="font-semibold">{formatCents(bid.amountCents)}</span>
-                <span className="text-xs text-muted-foreground">{new Date(bid.placedAt).toLocaleTimeString()}</span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(bid.placedAt).toLocaleTimeString("pt-BR")}
+                </span>
               </div>
             ))}
           </div>

@@ -33,7 +33,7 @@ export function LotsPage() {
         <p className="text-muted-foreground text-center py-12">No lots available right now.</p>
       )}
       <div className="grid gap-4 sm:grid-cols-2">
-        {data?.items.map((lot) => (
+        {data?.items.filter((lot) => lot.status !== "CANCELLED").map((lot) => (
           <Link key={lot.id} to={`/lots/${lot.id}`}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
               <CardHeader className="pb-2">

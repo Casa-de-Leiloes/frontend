@@ -9,6 +9,10 @@ import { RegisterPage } from "@/pages/RegisterPage";
 import { LotsPage } from "@/pages/LotsPage";
 import { LotDetailPage } from "@/pages/LotDetailPage";
 import { WalletPage } from "@/pages/WalletPage";
+import { AuctioneerPage } from "@/pages/AuctioneerPage";
+import { MyActivityPage } from "@/pages/MyActivityPage";
+import { AuditPage } from "@/pages/AuditPage";
+import { ReceiptPage } from "@/pages/ReceiptPage";
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 10_000 } } });
 
@@ -32,6 +36,10 @@ export function App() {
                 <Route path="/" element={<LotsPage />} />
                 <Route path="/lots/:id" element={<LotDetailPage />} />
                 <Route path="/wallet" element={<WalletPage />} />
+                <Route path="/auctioneer" element={<AuctioneerPage />} />
+                <Route path="/activity" element={<MyActivityPage />} />
+                <Route path="/audit/:lotId" element={<AuditPage />} />
+                <Route path="/receipt/:token" element={<ReceiptPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
