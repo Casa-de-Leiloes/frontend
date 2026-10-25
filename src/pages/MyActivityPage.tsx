@@ -55,12 +55,25 @@ export function MyActivityPage() {
                 <div className="flex items-center gap-2">
                   <Badge variant="default">Vencedor</Badge>
                   {win.receiptToken && (
-                    <Link
-                      to={`/receipt/${win.receiptToken}`}
-                      className="text-xs underline text-primary"
-                    >
-                      Comprovante
-                    </Link>
+                    <>
+                      <Link
+                        to={`/receipt/${win.receiptToken}`}
+                        className="text-xs underline text-primary"
+                      >
+                        Comprovante
+                      </Link>
+                      <button
+                        type="button"
+                        className="text-xs underline text-muted-foreground"
+                        onClick={() => {
+                          void navigator.clipboard.writeText(
+                            `${window.location.origin}/receipt/${win.receiptToken}`,
+                          );
+                        }}
+                      >
+                        Copiar link
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
