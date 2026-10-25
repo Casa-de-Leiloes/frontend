@@ -1,6 +1,17 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { lots } from "@/lib/api";
+import type { Lot } from "@/lib/api";
+
+type StatusFilter = "ALL" | "LIVE" | "SCHEDULED" | "CLOSED";
+
+const FILTERS: { value: StatusFilter; label: string }[] = [
+	{ value: "ALL", label: "Todos" },
+	{ value: "LIVE", label: "Ao Vivo" },
+	{ value: "SCHEDULED", label: "Agendados" },
+	{ value: "CLOSED", label: "Encerrados" },
+];
 
 function formatCents(cents: string | null): string {
 	if (!cents) return "—";
@@ -10,127 +21,230 @@ function formatCents(cents: string | null): string {
 	}).format(Number(cents) / 100);
 }
 
-function formatEndsAt(endsAt: string): string {
-	return new Date(endsAt).toLocaleString("pt-BR", {
-		day: "2-digit",
-		month: "2-digit",
-		year: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
+function useCountdown(endsAt: string): string {
+	const diff = Math.max(0, new Date(endsAt).getTime() - Date.now());
+	const h = Math.floor(diff / 3_600_000);
+	const m = Math.floor((diff % 3_600_000) / 60_000);
+	const s = Math.floor((diff % 60_000) / 1_000);
+	if (diff === 0) return "Encerrado";
+	if (h > 24) {
+		return new Date(endsAt).toLocaleDateString("pt-BR", {
+			day: "2-digit",
+			month: "2-digit",
+		});
+	}
+	return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-interface StatusBadgeProps {
-	status: string;
+function LiveDot() {
+	return (
+		<span
+			className="inline-block w-1.5 h-1.5 rounded-full mr-1 animate-pulse"
+			style={{ background: "#fff" }}
+		/>
+	);
 }
 
-function StatusBadge({ status }: StatusBadgeProps) {
-	const base =
-		"inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold";
+function StatusBadge({ status }: { status: string }) {
+	const base = "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold";
 	if (status === "LIVE")
 		return (
-			<span className={`${base} bg-[#1d5fbf] text-white`}>
-				<span className="mr-1 inline-block w-1.5 h-1.5 rounded-full bg-white opacity-90" />
+			<span className={base} style={{ background: "#1d5fbf", color: "#fff" }}>
+				<LiveDot />
 				AO VIVO
 			</span>
 		);
 	if (status === "SCHEDULED")
 		return (
-			<span className={`${base} bg-muted text-muted-foreground`}>AGENDADO</span>
+			<span className={base} style={{ background: "#e9e9e9", color: "#6b6b6b" }}>
+				AGENDADO
+			</span>
 		);
 	if (status === "CLOSED")
 		return (
-			<span className={`${base} bg-muted text-muted-foreground`}>
+			<span className={base} style={{ background: "#f0f0f0", color: "#6b6b6b" }}>
 				ENCERRADO
 			</span>
 		);
 	if (status === "CANCELLED")
 		return (
-			<span className={`${base} bg-destructive/10 text-destructive`}>
+			<span className={base} style={{ background: "#ffedea", color: "#831c1e" }}>
 				CANCELADO
 			</span>
 		);
 	return (
-		<span className={`${base} bg-muted text-muted-foreground`}>{status}</span>
+		<span className={base} style={{ background: "#e9e9e9", color: "#6b6b6b" }}>
+			{status}
+		</span>
+	);
+}
+
+function LotCard({ lot }: { lot: Lot }) {
+	const countdown = useCountdown(lot.endsAt);
+	const bidCents = lot.currentBidCents ?? lot.startingBidCents;
+
+	return (
+		<Link to={`/lots/${lot.id}`} className="group block">
+			<div
+				className="bg-white border rounded-lg overflow-hidden transition-all hover:border-[#c0c0c0]"
+				style={{ borderColor: "#e6e6e6" }}
+			>
+				{/* Image */}
+				<div
+					className="relative w-full bg-[#f0f0f0]"
+					style={{ aspectRatio: "4/3" }}
+				>
+					{lot.imageUrl ? (
+						<img
+							src={lot.imageUrl}
+							alt={lot.title}
+							className="w-full h-full object-cover"
+							loading="lazy"
+						/>
+					) : (
+						<div className="w-full h-full flex items-center justify-center">
+							<span className="text-[#c0c0c0] text-xs">Sem imagem</span>
+						</div>
+					)}
+					{/* Status badge overlay */}
+					<div className="absolute top-2 left-2">
+						<StatusBadge status={lot.status} />
+					</div>
+				</div>
+
+				{/* Body */}
+				<div className="p-4">
+					<p className="text-xs text-[#9ca3af] mb-1 uppercase tracking-wide">
+						{lot.category.replace(/_/g, " ")}
+					</p>
+					<h2 className="text-sm font-semibold text-[#0a0a0a] line-clamp-2 mb-3 leading-snug">
+						{lot.title}
+					</h2>
+
+					<div
+						className="border-t pt-3 flex items-end justify-between gap-2"
+						style={{ borderColor: "#f0f0f0" }}
+					>
+						<div>
+							<p className="text-[10px] text-[#9ca3af] uppercase tracking-wide mb-0.5">
+								Lance atual
+							</p>
+							<p
+								className="text-lg font-bold tabular-nums leading-none"
+								style={{ color: "#1d5fbf", fontVariantNumeric: "tabular-nums" }}
+							>
+								{formatCents(bidCents)}
+							</p>
+						</div>
+						<div className="text-right">
+							<p className="text-[10px] text-[#9ca3af] uppercase tracking-wide mb-0.5">
+								{lot.status === "LIVE" ? "Encerra em" : "Encerra"}
+							</p>
+							<p className="text-sm font-mono font-medium text-[#0a0a0a] tabular-nums">
+								{countdown}
+							</p>
+							<p className="text-[10px] text-[#9ca3af] mt-0.5">
+								{lot.bidCount} {lot.bidCount === 1 ? "lance" : "lances"}
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</Link>
 	);
 }
 
 export function LotsPage() {
+	const [filter, setFilter] = useState<StatusFilter>("ALL");
+
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["lots"],
 		queryFn: () => lots.list(),
-		refetchInterval: 30_000,
+		refetchInterval: 15_000,
 	});
 
-	const activeLots =
-		data?.items.filter((lot) => lot.status !== "CANCELLED") ?? [];
+	const allLots = data?.items.filter((l) => l.status !== "CANCELLED") ?? [];
 
-	if (isLoading)
-		return (
-			<div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
-				Carregando lotes…
-			</div>
-		);
+	const filtered =
+		filter === "ALL" ? allLots : allLots.filter((l) => l.status === filter);
 
-	if (error)
-		return (
-			<div className="flex items-center justify-center h-64 text-destructive text-sm">
-				Falha ao carregar lotes.
-			</div>
-		);
+	const liveCnt = allLots.filter((l) => l.status === "LIVE").length;
 
 	return (
-		<div className="p-6 lg:p-8">
-			<div className="mb-6 flex items-baseline justify-between gap-4">
-				<div>
-					<h1 className="text-xl font-bold text-foreground">
-						Lotes Disponíveis
-					</h1>
-					<p className="text-sm text-muted-foreground mt-0.5">
-						{activeLots.length} {activeLots.length === 1 ? "lote" : "lotes"}
-					</p>
-				</div>
+		<div className="max-w-7xl">
+			{/* Header */}
+			<div className="mb-6 flex items-baseline gap-3">
+				<h1 className="text-xl font-bold text-[#0a0a0a]">Leilões</h1>
+				{liveCnt > 0 && (
+					<span
+						className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold"
+						style={{ background: "#1d5fbf", color: "#fff" }}
+					>
+						<LiveDot />
+						{liveCnt} ao vivo
+					</span>
+				)}
 			</div>
 
-			{activeLots.length === 0 && (
-				<div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-					<p className="text-sm">Nenhum lote disponível no momento.</p>
+			{/* Filter tabs */}
+			<div
+				className="flex items-center gap-1 mb-6 border-b"
+				style={{ borderColor: "#e6e6e6" }}
+			>
+				{FILTERS.map((f) => {
+					const cnt =
+						f.value === "ALL"
+							? allLots.length
+							: allLots.filter((l) => l.status === f.value).length;
+					const active = filter === f.value;
+					return (
+						<button
+							key={f.value}
+							type="button"
+							onClick={() => setFilter(f.value)}
+							className="px-3 pb-2.5 text-sm font-medium transition-colors border-b-2 -mb-px"
+							style={{
+								borderBottomColor: active ? "#141414" : "transparent",
+								color: active ? "#0a0a0a" : "#6b6b6b",
+							}}
+						>
+							{f.label}
+							<span
+								className="ml-1.5 text-xs tabular-nums"
+								style={{ color: active ? "#6b6b6b" : "#9ca3af" }}
+							>
+								{cnt}
+							</span>
+						</button>
+					);
+				})}
+			</div>
+
+			{/* Loading */}
+			{isLoading && (
+				<div className="flex items-center justify-center h-64 text-sm text-[#6b6b6b]">
+					Carregando lotes…
 				</div>
 			)}
 
-			<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-				{activeLots.map((lot) => (
-					<Link key={lot.id} to={`/lots/${lot.id}`} className="group">
-						<div className="bg-surface border border-border rounded-lg p-5 hover:border-foreground/20 hover:shadow-md transition-all cursor-pointer h-full flex flex-col">
-							<div className="flex items-start justify-between gap-2 mb-3">
-								<StatusBadge status={lot.status} />
-								<span className="text-xs text-muted-foreground">
-									{lot.category.replace(/_/g, " ")}
-								</span>
-							</div>
+			{/* Error */}
+			{error && (
+				<div className="flex items-center justify-center h-64 text-sm text-[#c4242a]">
+					Falha ao carregar lotes.
+				</div>
+			)}
 
-							<h2 className="text-sm font-semibold text-foreground line-clamp-2 mb-4 flex-1">
-								{lot.title}
-							</h2>
+			{/* Empty */}
+			{!isLoading && !error && filtered.length === 0 && (
+				<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6b6b6b]">
+					Nenhum lote nesta categoria.
+				</div>
+			)}
 
-							<div className="border-t border-border pt-3 space-y-1.5">
-								<div className="flex justify-between items-baseline">
-									<span className="text-xs text-muted-foreground">
-										Lance atual
-									</span>
-									<span className="text-base font-bold text-[#1d5fbf] font-mono tabular-nums">
-										{formatCents(lot.currentBidCents ?? lot.startingBidCents)}
-									</span>
-								</div>
-								<div className="flex justify-between text-xs text-muted-foreground">
-									<span>
-										{lot.bidCount} {lot.bidCount === 1 ? "lance" : "lances"}
-									</span>
-									<span>Encerra {formatEndsAt(lot.endsAt)}</span>
-								</div>
-							</div>
-						</div>
-					</Link>
+			{/* Grid */}
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+				{filtered.map((lot) => (
+					<LotCard key={lot.id} lot={lot} />
 				))}
 			</div>
 		</div>
