@@ -1,9 +1,15 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+	BrowserRouter,
+	Routes,
+	Route,
+	Navigate,
+	useLocation,
+} from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
-import { NavBar } from "@/components/NavBar";
+import { Sidebar } from "@/components/Sidebar";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { LotsPage } from "@/pages/LotsPage";
@@ -14,40 +20,66 @@ import { MyActivityPage } from "@/pages/MyActivityPage";
 import { AuditPage } from "@/pages/AuditPage";
 import { ReceiptPage } from "@/pages/ReceiptPage";
 
-const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 10_000 } } });
+const qc = new QueryClient({
+	defaultOptions: { queries: { staleTime: 10_000 } },
+});
 
 function AuthLoader({ children }: { children: React.ReactNode }) {
-  const setUser = useAuthStore((s) => s.setUser);
-  useEffect(() => {
-    auth.session().then((r) => setUser(r.user)).catch(() => {});
-  }, [setUser]);
-  return <>{children}</>;
+	const setUser = useAuthStore((s) => s.setUser);
+	useEffect(() => {
+		auth
+			.session()
+			.then((r) => setUser(r.user))
+			.catch(() => {});
+	}, [setUser]);
+	return <>{children}</>;
+}
+
+const AUTH_ROUTES = ["/login", "/register"];
+
+function Shell({ children }: { children: React.ReactNode }) {
+	const location = useLocation();
+	const isAuthRoute = AUTH_ROUTES.includes(location.pathname);
+
+	if (isAuthRoute) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-ground px-4">
+				{children}
+			</div>
+		);
+	}
+
+	return (
+		<div className="min-h-screen flex bg-ground">
+			<Sidebar />
+			<main className="flex-1 ml-64 min-h-screen overflow-auto">
+				{children}
+			</main>
+		</div>
+	);
 }
 
 export function App() {
-  return (
-    <QueryClientProvider client={qc}>
-      <BrowserRouter>
-        <AuthLoader>
-          <div className="min-h-screen flex flex-col">
-            <NavBar />
-            <main className="flex-1">
-              <Routes>
-                <Route path="/" element={<LotsPage />} />
-                <Route path="/lots/:id" element={<LotDetailPage />} />
-                <Route path="/wallet" element={<WalletPage />} />
-                <Route path="/auctioneer" element={<AuctioneerPage />} />
-                <Route path="/activity" element={<MyActivityPage />} />
-                <Route path="/audit/:lotId" element={<AuditPage />} />
-                <Route path="/receipt/:token" element={<ReceiptPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-          </div>
-        </AuthLoader>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
+	return (
+		<QueryClientProvider client={qc}>
+			<BrowserRouter>
+				<AuthLoader>
+					<Shell>
+						<Routes>
+							<Route path="/" element={<LotsPage />} />
+							<Route path="/lots/:id" element={<LotDetailPage />} />
+							<Route path="/wallet" element={<WalletPage />} />
+							<Route path="/auctioneer" element={<AuctioneerPage />} />
+							<Route path="/activity" element={<MyActivityPage />} />
+							<Route path="/audit/:lotId" element={<AuditPage />} />
+							<Route path="/receipt/:token" element={<ReceiptPage />} />
+							<Route path="/login" element={<LoginPage />} />
+							<Route path="/register" element={<RegisterPage />} />
+							<Route path="*" element={<Navigate to="/" replace />} />
+						</Routes>
+					</Shell>
+				</AuthLoader>
+			</BrowserRouter>
+		</QueryClientProvider>
+	);
 }
