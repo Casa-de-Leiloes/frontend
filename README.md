@@ -4,17 +4,17 @@ Real-time auction house UI built as a technical test for Verzel's Elite Dev Juni
 
 ## Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Runtime | Bun 1.x |
-| Framework | React 19 + Vite 6 |
-| Routing | React Router v7 |
-| State | Zustand (auth) + TanStack Query (server state) |
-| Styling | Tailwind CSS v4 |
-| Components | Custom shadcn/ui-style (Radix UI primitives) |
-| Validation | Zod |
-| Linting | Biome |
-| CI | GitHub Actions |
+| Layer      | Technology                                     |
+| ---------- | ---------------------------------------------- |
+| Runtime    | Bun 1.x                                        |
+| Framework  | React 19 + Vite 6                              |
+| Routing    | React Router v7                                |
+| State      | Zustand (auth) + TanStack Query (server state) |
+| Styling    | Tailwind CSS v4                                |
+| Components | Custom shadcn/ui-style (Radix UI primitives)   |
+| Validation | Zod                                            |
+| Linting    | Biome                                          |
+| CI         | GitHub Actions                                 |
 
 ## Features
 

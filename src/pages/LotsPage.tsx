@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { lots } from "@/lib/api";
@@ -21,19 +21,29 @@ function formatCents(cents: string | null): string {
 	}).format(Number(cents) / 100);
 }
 
-function useCountdown(endsAt: string): string {
+function formatDiff(endsAt: string): string {
 	const diff = Math.max(0, new Date(endsAt).getTime() - Date.now());
+	if (diff === 0) return "Encerrado";
 	const h = Math.floor(diff / 3_600_000);
 	const m = Math.floor((diff % 3_600_000) / 60_000);
 	const s = Math.floor((diff % 60_000) / 1_000);
-	if (diff === 0) return "Encerrado";
-	if (h > 24) {
+	if (h >= 24) {
 		return new Date(endsAt).toLocaleDateString("pt-BR", {
 			day: "2-digit",
 			month: "2-digit",
 		});
 	}
 	return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function useCountdown(endsAt: string): string {
+	const [display, setDisplay] = useState(() => formatDiff(endsAt));
+	useEffect(() => {
+		setDisplay(formatDiff(endsAt));
+		const id = setInterval(() => setDisplay(formatDiff(endsAt)), 1_000);
+		return () => clearInterval(id);
+	}, [endsAt]);
+	return display;
 }
 
 function LiveDot() {
