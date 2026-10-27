@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
+import { translateError } from "@/lib/errors";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -22,7 +23,7 @@ export function LoginPage() {
 			if (res.user) setUser(res.user);
 			navigate("/");
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Falha ao entrar");
+			setError(translateError(err));
 		} finally {
 			setLoading(false);
 		}

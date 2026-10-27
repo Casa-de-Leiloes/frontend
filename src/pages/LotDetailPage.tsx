@@ -5,6 +5,7 @@ import { lots, bids, wallet } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { translateError } from "@/lib/errors";
 import type { Bid } from "@/lib/api";
 
 function formatCents(cents: string | null | undefined): string {
@@ -80,18 +81,51 @@ function CountdownBanner({ ms, urgent }: { ms: number; urgent: boolean }) {
 	);
 }
 
-const BID_ERROR_MESSAGES: Record<string, string> = {
-	ALREADY_LEADING: "Você já está liderando este lote",
-	BID_TOO_LOW: "Lance abaixo do mínimo permitido",
-	INSUFFICIENT_BALANCE: "Saldo insuficiente — deposite mais na carteira",
-	LOT_NOT_LIVE: "Lote não está ao vivo",
-};
+function LotGallery({
+	mainImage,
+	additionalImages,
+	title,
+}: {
+	mainImage: string | null;
+	additionalImages: string[];
+	title: string;
+}) {
+	const allImages = [mainImage, ...additionalImages].filter((u): u is string => Boolean(u));
+	const [activeIdx, setActiveIdx] = useState(0);
+	const active = allImages[activeIdx] ?? null;
 
-function friendlyBidError(raw: string): string {
-	for (const [code, msg] of Object.entries(BID_ERROR_MESSAGES)) {
-		if (raw.includes(code)) return msg;
-	}
-	return raw;
+	return (
+		<div className="space-y-2">
+			<div className="rounded-xl overflow-hidden bg-[#F5F4F0]" style={{ aspectRatio: "4/3" }}>
+				{active ? (
+					<img src={active} alt={title} className="w-full h-full object-contain" />
+				) : (
+					<div className="w-full h-full flex items-center justify-center">
+						<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1">
+							<rect x="3" y="3" width="18" height="18" rx="2"/>
+							<circle cx="8.5" cy="8.5" r="1.5"/>
+							<path d="m21 15-5-5L5 21"/>
+						</svg>
+					</div>
+				)}
+			</div>
+			{allImages.length > 1 && (
+				<div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+					{allImages.map((url, i) => (
+						<button
+							key={i}
+							type="button"
+							onClick={() => setActiveIdx(i)}
+							className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors"
+							style={{ borderColor: i === activeIdx ? "#1D4ED8" : "transparent" }}
+						>
+							<img src={url} alt={`${title} ${i + 1}`} className="w-full h-full object-cover" />
+						</button>
+					))}
+				</div>
+			)}
+		</div>
+	);
 }
 
 export function LotDetailPage() {
@@ -169,11 +203,7 @@ export function LotDetailPage() {
 			void qc.invalidateQueries({ queryKey: ["position", id] });
 			void qc.invalidateQueries({ queryKey: ["wallet-balance"] });
 		} catch (err) {
-			setBidError(
-				friendlyBidError(
-					err instanceof Error ? err.message : "Erro ao dar lance",
-				),
-			);
+			setBidError(translateError(err));
 		} finally {
 			setPlacing(false);
 		}
@@ -235,24 +265,12 @@ export function LotDetailPage() {
 				<div className="grid lg:grid-cols-[3fr_2fr] gap-8 items-start">
 					{/* LEFT */}
 					<div className="space-y-6">
-						{/* Main image */}
-						<div className="rounded-xl overflow-hidden bg-[#F5F4F0]" style={{ aspectRatio: "4/3" }}>
-							{lot.imageUrl ? (
-								<img
-									src={lot.imageUrl}
-									alt={lot.title}
-									className="w-full h-full object-contain"
-								/>
-							) : (
-								<div className="w-full h-full flex items-center justify-center">
-									<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1">
-										<rect x="3" y="3" width="18" height="18" rx="2"/>
-										<circle cx="8.5" cy="8.5" r="1.5"/>
-										<path d="m21 15-5-5L5 21"/>
-									</svg>
-								</div>
-							)}
-						</div>
+						{/* Image gallery */}
+						<LotGallery
+							mainImage={lot.imageUrl}
+							additionalImages={lot.additionalImages ?? []}
+							title={lot.title}
+						/>
 
 						{/* Description */}
 						{lot.description && (

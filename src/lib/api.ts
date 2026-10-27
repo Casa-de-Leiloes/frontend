@@ -27,6 +27,7 @@ export interface Lot {
 	title: string;
 	description: string | null;
 	category: string;
+	lotCategory: string;
 	startingBidCents: string;
 	currentBidCents: string | null;
 	minIncrementCents: string;
@@ -36,6 +37,7 @@ export interface Lot {
 	bidCount: number;
 	snapshotId: string;
 	imageUrl: string | null;
+	additionalImages: string[];
 }
 
 export interface Bid {
@@ -131,7 +133,9 @@ export const lots = {
 		providerId?: string;
 		title: string;
 		description?: string;
+		additionalImages?: string[];
 		category: string;
+		lotCategory?: string;
 		startingBidCents: number;
 		minIncrementCents: number;
 		startsAt: string;

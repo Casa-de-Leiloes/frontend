@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { wallet } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { translateError } from "@/lib/errors";
 
 function formatCents(cents: string): string {
 	return new Intl.NumberFormat("pt-BR", {
@@ -32,7 +33,7 @@ export function WalletPage() {
 			setAmount("");
 			void qc.invalidateQueries({ queryKey: ["wallet-balance"] });
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Falha ao depositar");
+			setError(translateError(err));
 		} finally {
 			setLoading(false);
 		}

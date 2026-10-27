@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { lots, catalog } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
+import { translateError } from "@/lib/errors";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { CatalogItem } from "@/lib/api";
@@ -59,6 +60,7 @@ interface CreateLotForm {
 	selectedItem: CatalogItem | null;
 	title: string;
 	description: string;
+	additionalImages: string[];
 	startingBid: string;
 	minIncrement: string;
 	startsAt: string;
@@ -79,6 +81,7 @@ export function AuctioneerPage() {
 		selectedItem: null,
 		title: "",
 		description: "",
+		additionalImages: [],
 		startingBid: "",
 		minIncrement: "",
 		startsAt: "",
@@ -115,6 +118,7 @@ export function AuctioneerPage() {
 				providerId: form.selectedItem.providerId,
 				title: form.title,
 				description: form.description || undefined,
+				additionalImages: form.additionalImages.filter((u) => u.trim() !== ""),
 				category: form.provider,
 				startingBidCents: Math.round(parseFloat(form.startingBid) * 100),
 				minIncrementCents: Math.round(parseFloat(form.minIncrement) * 100),
@@ -131,6 +135,7 @@ export function AuctioneerPage() {
 				selectedItem: null,
 				title: "",
 				description: "",
+				additionalImages: [],
 				startingBid: "",
 				minIncrement: "",
 				startsAt: "",
@@ -140,7 +145,7 @@ export function AuctioneerPage() {
 			void qc.invalidateQueries({ queryKey: ["lots"] });
 		},
 		onError: (err) => {
-			setCreateError(err instanceof Error ? err.message : "Erro ao criar lote");
+			setCreateError(translateError(err));
 			setCreateSuccess(false);
 		},
 	});
@@ -268,6 +273,51 @@ export function AuctioneerPage() {
 								placeholder="Descrição"
 							/>
 						</div>
+						{/* Additional images */}
+						<div className="space-y-2">
+							<label className="text-sm font-medium">
+								Imagens adicionais (URLs — máx. 10)
+							</label>
+							{form.additionalImages.map((url, i) => (
+								<div key={i} className="flex gap-2">
+									<Input
+										value={url}
+										onChange={(e) => {
+											const next = [...form.additionalImages];
+											next[i] = e.target.value;
+											setForm((prev) => ({ ...prev, additionalImages: next }));
+										}}
+										placeholder="https://..."
+										className="flex-1"
+									/>
+									<button
+										type="button"
+										onClick={() => {
+											const next = form.additionalImages.filter((_, j) => j !== i);
+											setForm((prev) => ({ ...prev, additionalImages: next }));
+										}}
+										className="px-2 py-1 text-xs text-red-600 hover:text-red-800 border border-red-200 rounded"
+									>
+										✕
+									</button>
+								</div>
+							))}
+							{form.additionalImages.length < 10 && (
+								<button
+									type="button"
+									onClick={() =>
+										setForm((prev) => ({
+											...prev,
+											additionalImages: [...prev.additionalImages, ""],
+										}))
+									}
+									className="text-xs text-[#1D4ED8] hover:underline"
+								>
+									+ Adicionar imagem
+								</button>
+							)}
+						</div>
+
 						<div className="space-y-1">
 							<label className="text-sm font-medium">Lance inicial (R$)</label>
 							<Input
