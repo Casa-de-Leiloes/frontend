@@ -110,11 +110,11 @@ export function AuctioneerPage() {
 		const scheduled = myLots.filter((l) => l.status === "SCHEDULED");
 		const closed = myLots.filter((l) => l.status === "CLOSED");
 		const totalBids = myLots.reduce((s, l) => s + l.bidCount, 0);
-		const totalValue = myLots.reduce(
-			(s, l) => s + Number(l.currentBidCents ?? l.startingBidCents),
-			0,
-		);
-		return { live, scheduled, closed, totalBids, totalValue };
+		// Recebido = soma dos lotes CLOSED que tiveram lances (arrematados)
+		const totalReceived = closed
+			.filter((l) => l.bidCount > 0)
+			.reduce((s, l) => s + Number(l.currentBidCents ?? 0), 0);
+		return { live, scheduled, closed, totalBids, totalReceived };
 	}, [myLots]);
 
 	const visibleLots =
@@ -235,9 +235,9 @@ export function AuctioneerPage() {
 						<p className="text-3xl font-bold text-[#0D0D0D] tabular-nums">{stats.totalBids}</p>
 					</div>
 					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Valor total</p>
-						<p className="text-xl font-bold text-[#0D0D0D] tabular-nums leading-tight mt-1">
-							{formatCents(String(stats.totalValue))}
+						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Recebido</p>
+						<p className="text-xl font-bold text-[#16A34A] tabular-nums leading-tight mt-1">
+							{formatCents(String(stats.totalReceived))}
 						</p>
 					</div>
 				</div>
@@ -305,12 +305,39 @@ export function AuctioneerPage() {
 								</div>
 							)}
 
-							{form.selectedItem && (
-								<div className="flex items-center gap-2 text-sm text-[#1D4ED8] bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg px-4 py-2.5">
-									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden><path d="M20 6L9 17l-5-5"/></svg>
-									<span>Selecionado: <strong>{form.selectedItem.title}</strong></span>
-								</div>
-							)}
+							{form.selectedItem && (() => {
+								const item = form.selectedItem;
+								const proxyImg = item.imageUrl ? imgProxy(item.imageUrl) : null;
+								const attrs = Object.entries(item.metadata ?? {})
+									.filter(([, v]) => v !== null && v !== "")
+									.slice(0, 4);
+								return (
+									<div className="flex gap-4 bg-[#F9FAFB] border border-[#E4E4E2] rounded-lg p-4">
+										{proxyImg && (
+											<img
+												src={proxyImg}
+												alt={item.title}
+												className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
+											/>
+										)}
+										<div className="flex-1 min-w-0">
+											<div className="flex items-start gap-2 mb-1">
+												<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2.5" className="mt-0.5 flex-shrink-0" aria-hidden><path d="M20 6L9 17l-5-5"/></svg>
+												<p className="text-sm font-semibold text-[#0D0D0D] line-clamp-2">{item.title}</p>
+											</div>
+											{attrs.length > 0 && (
+												<div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+													{attrs.map(([k, v]) => (
+														<span key={k} className="text-xs text-[#6B7280]">
+															<span className="font-medium capitalize">{k}:</span> {String(v)}
+														</span>
+													))}
+												</div>
+											)}
+										</div>
+									</div>
+								);
+							})()}
 
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div className="space-y-1.5 sm:col-span-2">
@@ -459,14 +486,24 @@ export function AuctioneerPage() {
 												<span className="text-xs text-[#9CA3AF] tabular-nums">
 													{lot.bidCount} lance{lot.bidCount !== 1 ? "s" : ""}
 												</span>
-												<span className="text-xs font-semibold tabular-nums" style={{ color: lot.bidCount > 0 ? "#1D4ED8" : "#9CA3AF" }}>
-													{formatCents(lot.currentBidCents ?? lot.startingBidCents)}
-												</span>
+												{lot.status === "CLOSED" ? (
+													lot.bidCount > 0 ? (
+														<span className="text-xs font-semibold tabular-nums text-[#16A34A]">
+															Arrematado · {formatCents(lot.currentBidCents)}
+														</span>
+													) : (
+														<span className="text-xs text-[#9CA3AF]">Sem lances</span>
+													)
+												) : (
+													<span className="text-xs font-semibold tabular-nums" style={{ color: lot.bidCount > 0 ? "#1D4ED8" : "#9CA3AF" }}>
+														{formatCents(lot.currentBidCents ?? lot.startingBidCents)}
+													</span>
+												)}
 											</div>
 										</div>
 										<div className="flex items-center gap-2.5 flex-shrink-0">
 											<StatusBadge status={lot.status} />
-											{(lot.status === "SCHEDULED" || lot.status === "LIVE") && (
+											{(lot.status === "SCHEDULED" || lot.status === "LIVE") && lot.bidCount === 0 && (
 												<button
 													type="button"
 													onClick={() => { if (confirm(`Cancelar lote "${lot.title}"?`)) cancelMutation.mutate(lot.id); }}
