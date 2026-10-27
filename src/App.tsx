@@ -9,7 +9,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
-import { Sidebar } from "@/components/Sidebar";
+import { TopNav } from "@/components/TopNav";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { LotsPage } from "@/pages/LotsPage";
@@ -43,16 +43,16 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 	if (isAuthRoute) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-ground px-4">
+			<div className="min-h-screen flex items-center justify-center bg-[#F5F4F0] px-4">
 				{children}
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen flex bg-ground">
-			<Sidebar />
-			<main className="flex-1 ml-64 min-h-screen overflow-auto">
+		<div className="min-h-screen bg-[#F5F4F0]">
+			<TopNav />
+			<main className="pt-14 min-h-screen">
 				{children}
 			</main>
 		</div>

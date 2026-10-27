@@ -15,6 +15,12 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/img-proxy/, ""),
 				secure: false,
+				headers: {
+					"User-Agent":
+						"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+					Referer: "https://www.artic.edu/",
+					Accept: "image/webp,image/apng,image/*,*/*;q=0.8",
+				},
 			},
 		},
 	},

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Bid } from "@/lib/api";
 
+
 function formatCents(cents: string | null | undefined): string {
 	if (!cents) return "—";
 	return new Intl.NumberFormat("pt-BR", {

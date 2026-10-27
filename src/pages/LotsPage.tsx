@@ -6,6 +6,35 @@ import type { Lot } from "@/lib/api";
 
 type StatusFilter = "ALL" | "LIVE" | "SCHEDULED" | "CLOSED";
 
+function IconGrid({ color }: { color: string }) {
+	return (
+		<svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+			<rect x="0" y="0" width="5.5" height="5.5" rx="1" fill={color} />
+			<rect x="7.5" y="0" width="5.5" height="5.5" rx="1" fill={color} />
+			<rect x="0" y="7.5" width="5.5" height="5.5" rx="1" fill={color} />
+			<rect x="7.5" y="7.5" width="5.5" height="5.5" rx="1" fill={color} />
+		</svg>
+	);
+}
+
+function IconClock({ color }: { color: string }) {
+	return (
+		<svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+			<circle cx="6.5" cy="6.5" r="5.5" stroke={color} strokeWidth="1.5" />
+			<path d="M6.5 3.5V6.5L8.5 8" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+		</svg>
+	);
+}
+
+function IconCheck({ color }: { color: string }) {
+	return (
+		<svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+			<circle cx="6.5" cy="6.5" r="5.5" stroke={color} strokeWidth="1.5" />
+			<path d="M4 6.5L6 8.5L9.5 5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+		</svg>
+	);
+}
+
 const FILTERS: { value: StatusFilter; label: string }[] = [
 	{ value: "ALL", label: "Todos" },
 	{ value: "LIVE", label: "Ao Vivo" },
@@ -48,16 +77,6 @@ function useTimeLeft(endsAt: string): { text: string; urgent: boolean } {
 	return val;
 }
 
-function proxyIfNeeded(url: string): string {
-	if (url.includes("artic.edu")) {
-		try {
-			return `/img-proxy${new URL(url).pathname}`;
-		} catch {
-			return url;
-		}
-	}
-	return url;
-}
 
 function LotImage({ src, alt }: { src: string | null; alt: string }) {
 	const [failed, setFailed] = useState(false);
@@ -72,10 +91,8 @@ function LotImage({ src, alt }: { src: string | null; alt: string }) {
 	}
 	return (
 		<img
-			src={proxyIfNeeded(src)}
+			src={src}
 			alt={alt}
-			crossOrigin="anonymous"
-			referrerPolicy="no-referrer"
 			onError={() => setFailed(true)}
 			className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
 			loading="lazy"
@@ -184,7 +201,7 @@ export function LotsPage() {
 		filter === "ALL" ? allLots : allLots.filter((l) => l.status === filter);
 
 	return (
-		<div className="max-w-7xl">
+		<div className="max-w-7xl mx-auto px-6 py-8">
 			{/* Header */}
 			<div className="mb-5">
 				<h1
@@ -214,11 +231,20 @@ export function LotsPage() {
 									border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
 								}}
 							>
+								{f.value === "ALL" && (
+									<IconGrid color={active ? "#fff" : "#6B7280"} />
+								)}
 								{f.value === "LIVE" && (
 									<span
-										className="w-1.5 h-1.5 rounded-full"
+										className="w-2 h-2 rounded-full"
 										style={{ background: active ? "#fff" : "#DC2626" }}
 									/>
+								)}
+								{f.value === "SCHEDULED" && (
+									<IconClock color={active ? "#fff" : "#6B7280"} />
+								)}
+								{f.value === "CLOSED" && (
+									<IconCheck color={active ? "#fff" : "#6B7280"} />
 								)}
 								{f.label}
 								<span className="text-xs tabular-nums opacity-60">{cnt}</span>
