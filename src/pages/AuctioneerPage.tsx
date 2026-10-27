@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { lots, catalog, imgProxy } from "@/lib/api";
@@ -73,9 +73,13 @@ function isoLocal(dateStr: string): string {
 	return new Date(dateStr).toISOString();
 }
 
+type LotTab = "ALL" | "LIVE" | "SCHEDULED" | "CLOSED" | "CANCELLED";
+
 export function AuctioneerPage() {
 	const user = useAuthStore((s) => s.user);
 	const qc = useQueryClient();
+	const [formOpen, setFormOpen] = useState(false);
+	const [lotTab, setLotTab] = useState<LotTab>("ALL");
 
 	const [form, setForm] = useState<CreateLotForm>({
 		provider: "ART_INSTITUTE_CHICAGO",
@@ -100,6 +104,21 @@ export function AuctioneerPage() {
 
 	const myLots =
 		allLots?.items.filter((l) => l.auctioneerId === user?.id) ?? [];
+
+	const stats = useMemo(() => {
+		const live = myLots.filter((l) => l.status === "LIVE");
+		const scheduled = myLots.filter((l) => l.status === "SCHEDULED");
+		const closed = myLots.filter((l) => l.status === "CLOSED");
+		const totalBids = myLots.reduce((s, l) => s + l.bidCount, 0);
+		const totalValue = myLots.reduce(
+			(s, l) => s + Number(l.currentBidCents ?? l.startingBidCents),
+			0,
+		);
+		return { live, scheduled, closed, totalBids, totalValue };
+	}, [myLots]);
+
+	const visibleLots =
+		lotTab === "ALL" ? myLots : myLots.filter((l) => l.status === lotTab);
 
 	const { data: searchResults, isFetching: searching } = useQuery({
 		queryKey: ["catalog-search", form.provider, searchQuery],
@@ -162,315 +181,308 @@ export function AuctioneerPage() {
 	}
 
 	return (
-		<div className="p-6 lg:p-8 max-w-4xl space-y-8">
-			<h1 className="text-xl font-bold text-foreground">Painel do Leiloeiro</h1>
-
-			{/* Create lot */}
-			<div className="bg-surface border border-border rounded-lg p-6 space-y-4">
-				<h2 className="text-sm font-semibold text-foreground">
-					Criar novo lote
-				</h2>
-				<div className="space-y-4">
-					{createSuccess && (
-						<p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
-							Lote criado com sucesso!
-						</p>
-					)}
-
-					<div className="space-y-2">
-						<label className="text-sm font-medium">Provedor de catálogo</label>
-						<div className="flex gap-2 flex-wrap">
-							{PROVIDERS.map((p) => (
-								<Button
-									key={p.key}
-									type="button"
-									size="sm"
-									variant={form.provider === p.key ? "primary" : "outline"}
-									onClick={() => {
-										setForm((prev) => ({
-											...prev,
-											provider: p.key,
-											selectedItem: null,
-										}));
-										setSearchQuery("");
-									}}
-								>
-									{p.label}
-								</Button>
-							))}
-						</div>
-					</div>
-
-					<div className="space-y-2">
-						<label className="text-sm font-medium">Buscar no catálogo</label>
-						<div className="flex gap-2">
-							<Input
-								placeholder="Ex: Van Gogh, Mona Lisa, Black Lotus..."
-								value={form.query}
-								onChange={(e) =>
-									setForm((prev) => ({ ...prev, query: e.target.value }))
-								}
-							/>
-							<Button
-								type="button"
-								onClick={() => setSearchQuery(form.query)}
-								disabled={form.query.length < 3 || searching}
+		<div className="min-h-screen bg-[#F5F4F0]">
+			{/* Dashboard header */}
+			<div className="bg-white border-b border-[#E4E4E2]">
+				<div className="max-w-5xl mx-auto px-6 py-6">
+					<div className="flex items-center justify-between">
+						<div>
+							<p className="text-xs text-[#9CA3AF] font-medium tracking-wider uppercase mb-1">
+								Painel do Leiloeiro
+							</p>
+							<h1
+								className="text-2xl font-bold text-[#0D0D0D]"
+								style={{ fontFamily: "var(--font-display)" }}
 							>
-								{searching ? "…" : "Buscar"}
-							</Button>
+								Olá, {user?.name?.split(" ")[0] ?? "Leiloeiro"}
+							</h1>
 						</div>
-					</div>
-
-					{searchResults && searchResults.items.length > 0 && (
-						<div className="border rounded divide-y max-h-48 overflow-y-auto">
-							{searchResults.items.map((item) => (
-								<button
-									key={item.providerId}
-									type="button"
-									className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${
-										form.selectedItem?.providerId === item.providerId
-											? "bg-primary/10 font-semibold"
-											: ""
-									}`}
-									onClick={() => selectItem(item)}
-								>
-									<span className="font-medium">{item.title}</span>
-									{item.description && (
-										<span className="text-muted-foreground ml-2 line-clamp-1">
-											— {stripHtml(item.description)}
-										</span>
-									)}
-								</button>
-							))}
-						</div>
-					)}
-
-					{form.selectedItem && (
-						<p className="text-sm text-primary">
-							✓ Selecionado: <strong>{form.selectedItem.title}</strong>
-						</p>
-					)}
-
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						<div className="space-y-1 sm:col-span-2">
-							<label className="text-sm font-medium">Título do lote</label>
-							<Input
-								value={form.title}
-								onChange={(e) =>
-									setForm((prev) => ({ ...prev, title: e.target.value }))
-								}
-								placeholder="Título"
-								required
-							/>
-						</div>
-						<div className="space-y-1 sm:col-span-2">
-							<label className="text-sm font-medium">
-								Descrição (opcional)
-							</label>
-							<Input
-								value={form.description}
-								onChange={(e) =>
-									setForm((prev) => ({ ...prev, description: e.target.value }))
-								}
-								placeholder="Descrição"
-							/>
-						</div>
-						{/* Additional images */}
-						<div className="space-y-2">
-							<label className="text-sm font-medium">
-								Imagens adicionais (URLs — máx. 10)
-							</label>
-							{form.additionalImages.map((url, i) => (
-								<div key={i} className="flex gap-2">
-									<Input
-										value={url}
-										onChange={(e) => {
-											const next = [...form.additionalImages];
-											next[i] = e.target.value;
-											setForm((prev) => ({ ...prev, additionalImages: next }));
-										}}
-										placeholder="https://..."
-										className="flex-1"
-									/>
-									<button
-										type="button"
-										onClick={() => {
-											const next = form.additionalImages.filter((_, j) => j !== i);
-											setForm((prev) => ({ ...prev, additionalImages: next }));
-										}}
-										className="px-2 py-1 text-xs text-red-600 hover:text-red-800 border border-red-200 rounded"
-									>
-										✕
-									</button>
-								</div>
-							))}
-							{form.additionalImages.length < 10 && (
-								<button
-									type="button"
-									onClick={() =>
-										setForm((prev) => ({
-											...prev,
-											additionalImages: [...prev.additionalImages, ""],
-										}))
-									}
-									className="text-xs text-[#1D4ED8] hover:underline"
-								>
-									+ Adicionar imagem
-								</button>
+						<button
+							type="button"
+							onClick={() => { setFormOpen((v) => !v); setCreateSuccess(false); setCreateError(null); }}
+							className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors"
+							style={{ background: formOpen ? "#374151" : "#1D4ED8" }}
+						>
+							{formOpen ? (
+								<>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden><path d="M18 6L6 18M6 6l12 12"/></svg>
+									Fechar
+								</>
+							) : (
+								<>
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden><path d="M12 5v14M5 12h14"/></svg>
+									Novo lote
+								</>
 							)}
-						</div>
-
-						<div className="space-y-1">
-							<label className="text-sm font-medium">Lance inicial (R$)</label>
-							<Input
-								type="number"
-								min="0.01"
-								step="0.01"
-								value={form.startingBid}
-								onChange={(e) =>
-									setForm((prev) => ({ ...prev, startingBid: e.target.value }))
-								}
-								placeholder="Ex: 100.00"
-							/>
-						</div>
-						<div className="space-y-1">
-							<label className="text-sm font-medium">
-								Incremento mínimo (R$)
-							</label>
-							<Input
-								type="number"
-								min="0.01"
-								step="0.01"
-								value={form.minIncrement}
-								onChange={(e) =>
-									setForm((prev) => ({ ...prev, minIncrement: e.target.value }))
-								}
-								placeholder="Ex: 10.00"
-							/>
-						</div>
-						<div className="space-y-1">
-							<label className="text-sm font-medium">Início</label>
-							<Input
-								type="datetime-local"
-								value={form.startsAt}
-								onChange={(e) =>
-									setForm((prev) => ({ ...prev, startsAt: e.target.value }))
-								}
-							/>
-						</div>
-						<div className="space-y-1">
-							<label className="text-sm font-medium">Encerramento</label>
-							<Input
-								type="datetime-local"
-								value={form.endsAt}
-								onChange={(e) =>
-									setForm((prev) => ({ ...prev, endsAt: e.target.value }))
-								}
-							/>
-						</div>
+						</button>
 					</div>
-
-					{createError && (
-						<p className="text-sm text-destructive bg-destructive/5 border border-destructive/20 rounded px-3 py-2">
-							{createError}
-						</p>
-					)}
-
-					<Button
-						onClick={() => {
-							setCreateError(null);
-							setCreateSuccess(false);
-							createMutation.mutate();
-						}}
-						disabled={
-							createMutation.isPending ||
-							!form.selectedItem ||
-							!form.title ||
-							!form.startingBid ||
-							!form.minIncrement ||
-							!form.startsAt ||
-							!form.endsAt
-						}
-					>
-						{createMutation.isPending ? "Criando…" : "Criar lote"}
-					</Button>
 				</div>
 			</div>
 
-			{/* My lots */}
-			<div>
-				<div className="flex items-center justify-between mb-4">
-					<h2 className="text-sm font-semibold text-[#0D0D0D]">
-						Meus lotes
-						<span className="ml-2 text-xs font-normal text-[#9CA3AF]">
-							{myLots.length} {myLots.length === 1 ? "item" : "itens"}
-						</span>
-					</h2>
+			<div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+				{/* Stats row */}
+				<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
+						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Ao vivo</p>
+						<p className="text-3xl font-bold text-[#DC2626] tabular-nums">{stats.live.length}</p>
+					</div>
+					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
+						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Agendados</p>
+						<p className="text-3xl font-bold text-[#1D4ED8] tabular-nums">{stats.scheduled.length}</p>
+					</div>
+					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
+						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Total lances</p>
+						<p className="text-3xl font-bold text-[#0D0D0D] tabular-nums">{stats.totalBids}</p>
+					</div>
+					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
+						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Valor total</p>
+						<p className="text-xl font-bold text-[#0D0D0D] tabular-nums leading-tight mt-1">
+							{formatCents(String(stats.totalValue))}
+						</p>
+					</div>
 				</div>
 
-				{myLots.length === 0 ? (
-					<div className="bg-white border border-[#E4E4E2] rounded-xl px-6 py-12 text-center">
-						<p className="text-sm text-[#9CA3AF]">Nenhum lote criado ainda.</p>
-					</div>
-				) : (
-					<div className="bg-white border border-[#E4E4E2] rounded-xl overflow-hidden divide-y divide-[#F3F4F6]">
-						{myLots.map((lot) => {
-							const proxyUrl = imgProxy(lot.imageUrl);
-							return (
-								<div key={lot.id} className="flex items-center gap-4 px-4 py-3 hover:bg-[#FAFAFA] transition-colors">
-									{/* Thumbnail */}
-									<div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-[#F5F4F0]">
-										{proxyUrl ? (
-											<img src={proxyUrl} alt={lot.title} className="w-full h-full object-cover" />
-										) : (
-											<div className="w-full h-full flex items-center justify-center">
-												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.5">
-													<rect x="3" y="3" width="18" height="18" rx="2"/>
-													<circle cx="8.5" cy="8.5" r="1.5"/>
-													<path d="m21 15-5-5L5 21"/>
-												</svg>
-											</div>
-										)}
-									</div>
+				{/* Create lot form — collapsible */}
+				{formOpen && (
+					<div className="bg-white rounded-xl border border-[#E4E4E2] p-6">
+						<h2 className="text-base font-semibold text-[#0D0D0D] mb-5">Criar novo lote</h2>
+						<div className="space-y-5">
+							{createSuccess && (
+								<p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
+									Lote criado com sucesso!
+								</p>
+							)}
 
-									{/* Info */}
-									<div className="flex-1 min-w-0">
-										<Link
-											to={`/lots/${lot.id}`}
-											className="text-sm font-medium text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors line-clamp-1"
+							<div className="space-y-2">
+								<label className="text-sm font-medium text-[#374151]">Provedor de catálogo</label>
+								<div className="flex gap-2 flex-wrap">
+									{PROVIDERS.map((p) => (
+										<Button
+											key={p.key}
+											type="button"
+											size="sm"
+											variant={form.provider === p.key ? "primary" : "outline"}
+											onClick={() => {
+												setForm((prev) => ({ ...prev, provider: p.key, selectedItem: null }));
+												setSearchQuery("");
+											}}
 										>
-											{lot.title}
-										</Link>
-										<div className="flex items-center gap-2 mt-0.5">
-											<span className="text-xs text-[#9CA3AF] tabular-nums">
-												{lot.bidCount} lance{lot.bidCount !== 1 ? "s" : ""} · {formatCents(lot.currentBidCents ?? lot.startingBidCents)}
-											</span>
-										</div>
-									</div>
+											{p.label}
+										</Button>
+									))}
+								</div>
+							</div>
 
-									{/* Status + action */}
-									<div className="flex items-center gap-2 flex-shrink-0">
-										<StatusBadge status={lot.status} />
-										{(lot.status === "SCHEDULED" || lot.status === "LIVE") && (
+							<div className="space-y-2">
+								<label className="text-sm font-medium text-[#374151]">Buscar no catálogo</label>
+								<div className="flex gap-2">
+									<Input
+										placeholder="Ex: Van Gogh, Mona Lisa, Black Lotus..."
+										value={form.query}
+										onChange={(e) => setForm((prev) => ({ ...prev, query: e.target.value }))}
+									/>
+									<Button type="button" onClick={() => setSearchQuery(form.query)} disabled={form.query.length < 3 || searching}>
+										{searching ? "…" : "Buscar"}
+									</Button>
+								</div>
+							</div>
+
+							{searchResults && searchResults.items.length > 0 && (
+								<div className="border border-[#E4E4E2] rounded-lg divide-y max-h-48 overflow-y-auto">
+									{searchResults.items.map((item) => (
+										<button
+											key={item.providerId}
+											type="button"
+											className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#F9FAFB] transition-colors ${form.selectedItem?.providerId === item.providerId ? "bg-[#EFF6FF] font-semibold" : ""}`}
+											onClick={() => selectItem(item)}
+										>
+											<span className="font-medium">{item.title}</span>
+											{item.description && (
+												<span className="text-[#9CA3AF] ml-2 line-clamp-1">— {stripHtml(item.description)}</span>
+											)}
+										</button>
+									))}
+								</div>
+							)}
+
+							{form.selectedItem && (
+								<div className="flex items-center gap-2 text-sm text-[#1D4ED8] bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg px-4 py-2.5">
+									<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden><path d="M20 6L9 17l-5-5"/></svg>
+									<span>Selecionado: <strong>{form.selectedItem.title}</strong></span>
+								</div>
+							)}
+
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+								<div className="space-y-1.5 sm:col-span-2">
+									<label className="text-sm font-medium text-[#374151]">Título do lote</label>
+									<Input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Título" required />
+								</div>
+								<div className="space-y-1.5 sm:col-span-2">
+									<label className="text-sm font-medium text-[#374151]">Descrição (opcional)</label>
+									<Input value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Descrição" />
+								</div>
+
+								<div className="space-y-2 sm:col-span-2">
+									<label className="text-sm font-medium text-[#374151]">Imagens adicionais (URLs — máx. 10)</label>
+									{form.additionalImages.map((url, i) => (
+										<div key={i} className="flex gap-2">
+											<Input
+												value={url}
+												onChange={(e) => {
+													const next = [...form.additionalImages];
+													next[i] = e.target.value;
+													setForm((prev) => ({ ...prev, additionalImages: next }));
+												}}
+												placeholder="https://..."
+												className="flex-1"
+											/>
 											<button
 												type="button"
-												onClick={() => {
-													if (confirm(`Cancelar lote "${lot.title}"?`)) {
-														cancelMutation.mutate(lot.id);
-													}
-												}}
-												disabled={cancelMutation.isPending}
-												className="text-xs text-[#DC2626] hover:text-white hover:bg-[#DC2626] border border-[#FECACA] px-2 py-0.5 rounded-full transition-colors disabled:opacity-50"
-											>
-												Cancelar
-											</button>
-										)}
-									</div>
+												onClick={() => setForm((prev) => ({ ...prev, additionalImages: prev.additionalImages.filter((_, j) => j !== i) }))}
+												className="px-2 py-1 text-xs text-[#DC2626] hover:text-white hover:bg-[#DC2626] border border-[#FECACA] rounded transition-colors"
+											>✕</button>
+										</div>
+									))}
+									{form.additionalImages.length < 10 && (
+										<button type="button" onClick={() => setForm((prev) => ({ ...prev, additionalImages: [...prev.additionalImages, ""] }))} className="text-xs text-[#1D4ED8] hover:underline">
+											+ Adicionar imagem
+										</button>
+									)}
 								</div>
-							);
-						})}
+
+								<div className="space-y-1.5">
+									<label className="text-sm font-medium text-[#374151]">Lance inicial (R$)</label>
+									<Input type="number" min="0.01" step="0.01" value={form.startingBid} onChange={(e) => setForm((prev) => ({ ...prev, startingBid: e.target.value }))} placeholder="Ex: 100.00" />
+								</div>
+								<div className="space-y-1.5">
+									<label className="text-sm font-medium text-[#374151]">Incremento mínimo (R$)</label>
+									<Input type="number" min="0.01" step="0.01" value={form.minIncrement} onChange={(e) => setForm((prev) => ({ ...prev, minIncrement: e.target.value }))} placeholder="Ex: 10.00" />
+								</div>
+								<div className="space-y-1.5">
+									<label className="text-sm font-medium text-[#374151]">Início</label>
+									<Input type="datetime-local" value={form.startsAt} onChange={(e) => setForm((prev) => ({ ...prev, startsAt: e.target.value }))} />
+								</div>
+								<div className="space-y-1.5">
+									<label className="text-sm font-medium text-[#374151]">Encerramento</label>
+									<Input type="datetime-local" value={form.endsAt} onChange={(e) => setForm((prev) => ({ ...prev, endsAt: e.target.value }))} />
+								</div>
+							</div>
+
+							{createError && (
+								<p className="text-sm text-[#DC2626] bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-4 py-2.5">
+									{createError}
+								</p>
+							)}
+
+							<div className="flex gap-3 pt-1">
+								<Button
+									onClick={() => { setCreateError(null); setCreateSuccess(false); createMutation.mutate(); }}
+									disabled={createMutation.isPending || !form.selectedItem || !form.title || !form.startingBid || !form.minIncrement || !form.startsAt || !form.endsAt}
+								>
+									{createMutation.isPending ? "Criando…" : "Criar lote"}
+								</Button>
+								<button type="button" onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
+									Cancelar
+								</button>
+							</div>
+						</div>
 					</div>
 				)}
+
+				{/* My lots */}
+				<div className="bg-white rounded-xl border border-[#E4E4E2] overflow-hidden">
+					{/* Lots header with tab filters */}
+					<div className="px-6 py-4 border-b border-[#F3F4F6] flex items-center justify-between gap-4 flex-wrap">
+						<h2 className="text-base font-semibold text-[#0D0D0D]">
+							Meus lotes
+							<span className="ml-2 text-sm font-normal text-[#9CA3AF]">{myLots.length}</span>
+						</h2>
+						<div className="flex gap-1">
+							{(["ALL", "LIVE", "SCHEDULED", "CLOSED", "CANCELLED"] as LotTab[]).map((tab) => {
+								const label: Record<LotTab, string> = { ALL: "Todos", LIVE: "Ao vivo", SCHEDULED: "Agendados", CLOSED: "Encerrados", CANCELLED: "Cancelados" };
+								const count = tab === "ALL" ? myLots.length : myLots.filter((l) => l.status === tab).length;
+								const active = lotTab === tab;
+								return (
+									<button
+										key={tab}
+										type="button"
+										onClick={() => setLotTab(tab)}
+										className="px-3 py-1 rounded-full text-xs font-medium transition-colors"
+										style={{
+											background: active ? "#0D0D0D" : "transparent",
+											color: active ? "#fff" : "#6B7280",
+										}}
+									>
+										{label[tab]} {count > 0 && <span className={active ? "opacity-70" : ""}>{count}</span>}
+									</button>
+								);
+							})}
+						</div>
+					</div>
+
+					{visibleLots.length === 0 ? (
+						<div className="px-6 py-16 text-center">
+							<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.5" className="mx-auto mb-3" aria-hidden>
+								<path d="M12 2a7 7 0 1 0 0 14A7 7 0 0 0 12 2z"/><path d="M12 8v4m0 4h.01"/>
+							</svg>
+							<p className="text-sm text-[#9CA3AF]">
+								{lotTab === "ALL" ? "Nenhum lote criado ainda." : "Nenhum lote nesta categoria."}
+							</p>
+							{lotTab === "ALL" && (
+								<button type="button" onClick={() => setFormOpen(true)} className="mt-3 text-sm text-[#1D4ED8] hover:underline font-medium">
+									Criar primeiro lote →
+								</button>
+							)}
+						</div>
+					) : (
+						<div className="divide-y divide-[#F3F4F6]">
+							{visibleLots.map((lot) => {
+								const proxyUrl = imgProxy(lot.imageUrl);
+								return (
+									<div key={lot.id} className="flex items-center gap-4 px-6 py-3.5 hover:bg-[#FAFAFA] transition-colors group">
+										<div className="flex-shrink-0 w-11 h-11 rounded-lg overflow-hidden bg-[#F5F4F0]">
+											{proxyUrl ? (
+												<img src={proxyUrl} alt={lot.title} className="w-full h-full object-cover" />
+											) : (
+												<div className="w-full h-full flex items-center justify-center">
+													<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.5" aria-hidden>
+														<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+													</svg>
+												</div>
+											)}
+										</div>
+										<div className="flex-1 min-w-0">
+											<Link to={`/lots/${lot.id}`} className="text-sm font-semibold text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors line-clamp-1">
+												{lot.title}
+											</Link>
+											<div className="flex items-center gap-3 mt-0.5">
+												<span className="text-xs text-[#9CA3AF] tabular-nums">
+													{lot.bidCount} lance{lot.bidCount !== 1 ? "s" : ""}
+												</span>
+												<span className="text-xs font-semibold tabular-nums" style={{ color: lot.bidCount > 0 ? "#1D4ED8" : "#9CA3AF" }}>
+													{formatCents(lot.currentBidCents ?? lot.startingBidCents)}
+												</span>
+											</div>
+										</div>
+										<div className="flex items-center gap-2.5 flex-shrink-0">
+											<StatusBadge status={lot.status} />
+											{(lot.status === "SCHEDULED" || lot.status === "LIVE") && (
+												<button
+													type="button"
+													onClick={() => { if (confirm(`Cancelar lote "${lot.title}"?`)) cancelMutation.mutate(lot.id); }}
+													disabled={cancelMutation.isPending}
+													className="opacity-0 group-hover:opacity-100 text-xs text-[#DC2626] hover:text-white hover:bg-[#DC2626] border border-[#FECACA] px-2.5 py-1 rounded-full transition-all disabled:opacity-50"
+												>
+													Cancelar
+												</button>
+											)}
+										</div>
+									</div>
+								);
+							})}
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	);
