@@ -116,8 +116,12 @@ export const auth = {
 };
 
 export const lots = {
-	list: (params?: { status?: string }) => {
-		const qs = params?.status ? `?status=${params.status}` : "";
+	list: (params?: { status?: string; lotCategory?: string; endsToday?: boolean }) => {
+		const p = new URLSearchParams();
+		if (params?.status) p.set("status", params.status);
+		if (params?.lotCategory) p.set("lotCategory", params.lotCategory);
+		if (params?.endsToday) p.set("endsToday", "true");
+		const qs = p.toString() ? `?${p.toString()}` : "";
 		return request<{ items: Lot[]; nextCursor: string | null }>(`/lots${qs}`);
 	},
 	get: (id: string) => request<Lot>(`/lots/${id}`),

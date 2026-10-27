@@ -1,10 +1,24 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { lots } from "@/lib/api";
 import type { Lot } from "@/lib/api";
 
 type StatusFilter = "ALL" | "LIVE" | "SCHEDULED" | "CLOSED";
+type TimeFilter = "ENDS_TODAY" | "NONE";
+
+const LOT_CATEGORY_LABELS: Record<string, string> = {
+	FINE_ART: "Arte",
+	JEWELRY: "Joalharia",
+	WATCHES: "Relógios",
+	ANTIQUITIES: "Antiguidades",
+	NUMISMATICS: "Numismática",
+	FASHION: "Moda",
+	VEHICLES: "Veículos",
+	BOOKS: "Livros",
+	WINE: "Vinhos",
+	OTHER: "Outros",
+};
 
 function IconGrid({ color }: { color: string }) {
 	return (
@@ -35,12 +49,6 @@ function IconCheck({ color }: { color: string }) {
 	);
 }
 
-const FILTERS: { value: StatusFilter; label: string }[] = [
-	{ value: "ALL", label: "Todos" },
-	{ value: "LIVE", label: "Ao Vivo" },
-	{ value: "SCHEDULED", label: "Agendados" },
-	{ value: "CLOSED", label: "Encerrados" },
-];
 
 function formatCents(cents: string | null): string {
 	if (!cents) return "—";
@@ -286,11 +294,19 @@ function SectionRow({
 }
 
 export function LotsPage() {
+	const [searchParams, setSearchParams] = useSearchParams();
 	const [filter, setFilter] = useState<StatusFilter>("ALL");
+	const [timeFilter, setTimeFilter] = useState<TimeFilter>("NONE");
+
+	const urlCategory = searchParams.get("lotCategory") ?? undefined;
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["lots"],
-		queryFn: () => lots.list(),
+		queryKey: ["lots", filter, timeFilter, urlCategory],
+		queryFn: () => lots.list({
+			status: filter !== "ALL" ? filter : undefined,
+			endsToday: timeFilter === "ENDS_TODAY" ? true : undefined,
+			lotCategory: urlCategory,
+		}),
 		refetchInterval: 15_000,
 	});
 
@@ -300,8 +316,9 @@ export function LotsPage() {
 	const closedLots = allLots.filter((l) => l.status === "CLOSED");
 	const heroLot = liveLots[0] ?? scheduledLots[0] ?? null;
 
-	const filtered =
-		filter === "ALL" ? allLots : allLots.filter((l) => l.status === filter);
+	const filtered = allLots;
+
+	const hasActiveFilter = filter !== "ALL" || timeFilter !== "NONE" || !!urlCategory;
 
 	if (isLoading) {
 		return (
@@ -322,7 +339,7 @@ export function LotsPage() {
 	return (
 		<div className="max-w-7xl mx-auto px-6 py-8">
 			{/* Hero */}
-			{heroLot && filter === "ALL" && (
+			{heroLot && !hasActiveFilter && (
 				<div className="mb-10">
 					<HeroLot lot={heroLot} />
 				</div>
@@ -330,17 +347,13 @@ export function LotsPage() {
 
 			{/* Filter chips */}
 			<div className="flex items-center gap-2 flex-wrap mb-8">
-				{FILTERS.map((f) => {
-					const cnt =
-						f.value === "ALL"
-							? allLots.length
-							: allLots.filter((l) => l.status === f.value).length;
-					const active = filter === f.value;
+				{/* Todos */}
+				{(() => {
+					const active = filter === "ALL" && timeFilter === "NONE" && !urlCategory;
 					return (
 						<button
-							key={f.value}
 							type="button"
-							onClick={() => setFilter(f.value)}
+							onClick={() => { setFilter("ALL"); setTimeFilter("NONE"); setSearchParams({}); }}
 							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
 							style={{
 								background: active ? "#0D0D0D" : "#FFFFFF",
@@ -348,25 +361,103 @@ export function LotsPage() {
 								border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
 							}}
 						>
-							{f.value === "ALL" && <IconGrid color={active ? "#fff" : "#6B7280"} />}
-							{f.value === "LIVE" && (
-								<span className="w-2 h-2 rounded-full" style={{ background: active ? "#fff" : "#DC2626" }} />
-							)}
-							{f.value === "SCHEDULED" && <IconClock color={active ? "#fff" : "#6B7280"} />}
-							{f.value === "CLOSED" && <IconCheck color={active ? "#fff" : "#6B7280"} />}
-							{f.label}
-							<span className="text-xs tabular-nums opacity-60">{cnt}</span>
+							<IconGrid color={active ? "#fff" : "#6B7280"} />
+							Todos
 						</button>
 					);
-				})}
+				})()}
+
+				{/* Livestream (LIVE) */}
+				{(() => {
+					const active = filter === "LIVE";
+					return (
+						<button
+							type="button"
+							onClick={() => { setFilter(active ? "ALL" : "LIVE"); }}
+							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+							style={{
+								background: active ? "#DC2626" : "#FFFFFF",
+								color: active ? "#FFFFFF" : "#6B7280",
+								border: active ? "1px solid #DC2626" : "1px solid #E4E4E2",
+							}}
+						>
+							<span className="w-2 h-2 rounded-full" style={{ background: active ? "#fff" : "#DC2626" }} />
+							Livestream
+						</button>
+					);
+				})()}
+
+				{/* Termina hoje */}
+				{(() => {
+					const active = timeFilter === "ENDS_TODAY";
+					return (
+						<button
+							type="button"
+							onClick={() => setTimeFilter(active ? "NONE" : "ENDS_TODAY")}
+							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+							style={{
+								background: active ? "#0D0D0D" : "#FFFFFF",
+								color: active ? "#FFFFFF" : "#6B7280",
+								border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
+							}}
+						>
+							<IconClock color={active ? "#fff" : "#6B7280"} />
+							Termina hoje
+						</button>
+					);
+				})()}
+
+				{/* Começa em breve (SCHEDULED) */}
+				{(() => {
+					const active = filter === "SCHEDULED";
+					return (
+						<button
+							type="button"
+							onClick={() => setFilter(active ? "ALL" : "SCHEDULED")}
+							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+							style={{
+								background: active ? "#0D0D0D" : "#FFFFFF",
+								color: active ? "#FFFFFF" : "#6B7280",
+								border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
+							}}
+						>
+							<svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
+								<circle cx="6.5" cy="6.5" r="5.5" stroke={active ? "#fff" : "#6B7280"} strokeWidth="1.5"/>
+								<path d="M4 6.5h5M8 4l2 2.5-2 2.5" stroke={active ? "#fff" : "#6B7280"} strokeWidth="1.2" strokeLinecap="round"/>
+							</svg>
+							Começa em breve
+						</button>
+					);
+				})()}
+
+				{/* Category tag (when active) */}
+				{urlCategory && (
+					<button
+						type="button"
+						onClick={() => setSearchParams({})}
+						className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+						style={{ background: "#1D4ED8", color: "#fff", border: "1px solid #1D4ED8" }}
+					>
+						{LOT_CATEGORY_LABELS[urlCategory] ?? urlCategory}
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+							<path d="M18 6L6 18M6 6l12 12"/>
+						</svg>
+					</button>
+				)}
+
+				{hasActiveFilter && (
+					<span className="text-xs text-[#6B7280] ml-2">
+						{allLots.length} {allLots.length === 1 ? "leilão" : "leilões"}
+					</span>
+				)}
 			</div>
 
-			{/* Filtered single-status view */}
-			{filter !== "ALL" && (
+			{/* Filtered view (any active filter) */}
+			{hasActiveFilter ? (
 				<>
 					{filtered.length === 0 ? (
 						<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6B7280]">
-							Nenhum lote nesta categoria.
+							Nenhum lote encontrado.
 						</div>
 					) : (
 						<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -376,10 +467,8 @@ export function LotsPage() {
 						</div>
 					)}
 				</>
-			)}
-
-			{/* ALL view: marketplace sections */}
-			{filter === "ALL" && (
+			) : (
+				/* ALL view: marketplace sections */
 				<>
 					<SectionRow
 						title="Leilões ao vivo"

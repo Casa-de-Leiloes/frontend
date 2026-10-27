@@ -1,6 +1,20 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
+
+const LOT_CATEGORIES = [
+	{ key: "FINE_ART", label: "Arte", color: "#7AB8A0" },
+	{ key: "JEWELRY", label: "Joalharia e pedras preciosas", color: "#B8A0C8" },
+	{ key: "WATCHES", label: "Relógios e câmeras", color: "#4A90D9" },
+	{ key: "ANTIQUITIES", label: "Antiguidades", color: "#C8A87A" },
+	{ key: "NUMISMATICS", label: "Moedas e selos", color: "#8BA8C8" },
+	{ key: "FASHION", label: "Moda", color: "#D4A8B0" },
+	{ key: "VEHICLES", label: "Carros e motos", color: "#A8B878" },
+	{ key: "BOOKS", label: "Livros e memorabilia", color: "#7A9878" },
+	{ key: "WINE", label: "Vinho e bebidas", color: "#A87878" },
+	{ key: "OTHER", label: "Outras categorias", color: "#A8A8A8" },
+];
 
 const CATEGORIES = [
 	{
@@ -97,6 +111,7 @@ export function TopNav() {
 	const setUser = useAuthStore((s) => s.setUser);
 	const navigate = useNavigate();
 	const location = useLocation();
+	const [catModalOpen, setCatModalOpen] = useState(false);
 
 	async function handleSignOut() {
 		await auth.signOut().catch(() => {});
@@ -112,11 +127,12 @@ export function TopNav() {
 	const activeCat = CATEGORIES.find((c) => c.href === (activeCatHref ?? "/")) ?? CATEGORIES[0];
 
 	return (
+		<>
 		<header className="fixed top-0 inset-x-0 z-30 bg-white" style={{ borderBottom: "1px solid #E4E4E2" }}>
 			{/* Main bar */}
 			<div className="max-w-7xl mx-auto px-6 h-14 flex items-center gap-4">
 				{/* Logo */}
-				<Link to="/" className="flex-shrink-0 mr-2">
+				<Link to="/" className="flex-shrink-0 mr-1">
 					<span className="text-[10px] font-semibold tracking-[0.2em] text-[#9CA3AF] uppercase block leading-none">
 						Casa de
 					</span>
@@ -127,6 +143,18 @@ export function TopNav() {
 						Leilões
 					</span>
 				</Link>
+
+				{/* Categorias button */}
+				<button
+					type="button"
+					onClick={() => setCatModalOpen(true)}
+					className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors rounded-md hover:bg-[#F3F4F6] flex-shrink-0"
+				>
+					Categorias
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+						<path d="M6 9l6 6 6-6"/>
+					</svg>
+				</button>
 
 				{/* Spacer */}
 				<div className="flex-1" />
@@ -225,5 +253,54 @@ export function TopNav() {
 				</div>
 			</div>
 		</header>
+
+		{/* Categories modal */}
+		{catModalOpen && (
+			<div
+				className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4"
+				style={{ background: "rgba(0,0,0,0.5)" }}
+				onClick={() => setCatModalOpen(false)}
+			>
+				<div
+					className="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-8"
+					onClick={(e) => e.stopPropagation()}
+				>
+					<div className="flex items-center justify-between mb-6">
+						<h2 className="text-3xl font-bold text-[#0D0D0D]" style={{ fontFamily: "var(--font-display)" }}>
+							Categorias
+						</h2>
+						<button
+							type="button"
+							onClick={() => setCatModalOpen(false)}
+							className="text-[#6B7280] hover:text-[#0D0D0D] transition-colors p-1"
+							aria-label="Fechar"
+						>
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+								<path d="M18 6L6 18M6 6l12 12"/>
+							</svg>
+						</button>
+					</div>
+					<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+						{LOT_CATEGORIES.map((cat) => (
+							<Link
+								key={cat.key}
+								to={`/?lotCategory=${cat.key}`}
+								onClick={() => setCatModalOpen(false)}
+								className="relative h-24 rounded-lg overflow-hidden flex items-end p-3 group"
+								style={{ background: cat.color }}
+							>
+								<span
+									className="text-white font-semibold text-sm leading-tight drop-shadow-sm group-hover:underline"
+									style={{ fontFamily: "var(--font-display)" }}
+								>
+									{cat.label}
+								</span>
+							</Link>
+						))}
+					</div>
+				</div>
+			</div>
+		)}
+		</>
 	);
 }
