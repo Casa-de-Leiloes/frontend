@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { translateError } from "@/lib/errors";
 
 function formatCents(cents: string | number | null | undefined): string {
-	if (cents === null || cents === undefined) return "—";
+	if (cents === null || cents === undefined) return "-";
 	return new Intl.NumberFormat("pt-BR", {
 		style: "currency",
 		currency: "BRL",
@@ -114,7 +114,7 @@ export function BidderPage() {
 										fontFamily: "var(--font-mono)",
 									}}
 								>
-									{balance ? formatCents(balance.availableCents) : "—"}
+									{balance ? formatCents(balance.availableCents) : "-"}
 								</p>
 							</div>
 							<button
@@ -215,7 +215,7 @@ export function BidderPage() {
 							Reservado
 						</p>
 						<p className="text-lg font-bold text-[#9CA3AF] tabular-nums leading-tight mt-1">
-							{balance ? formatCents(balance.committedCents) : "—"}
+							{balance ? formatCents(balance.committedCents) : "-"}
 						</p>
 					</div>
 				</div>

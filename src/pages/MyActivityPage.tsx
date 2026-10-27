@@ -4,7 +4,7 @@ import { users, wallet } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 
 function formatCents(cents: string | null | undefined): string {
-	if (!cents) return "—";
+	if (!cents) return "-";
 	return new Intl.NumberFormat("pt-BR", {
 		style: "currency",
 		currency: "BRL",
@@ -66,7 +66,7 @@ export function MyActivityPage() {
 					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
 						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Disponível</p>
 						<p className="text-lg font-bold text-[#1D4ED8] tabular-nums leading-tight mt-1">
-							{balance ? formatCents(balance.availableCents) : "—"}
+							{balance ? formatCents(balance.availableCents) : "-"}
 						</p>
 					</div>
 				</div>
@@ -185,7 +185,7 @@ export function MyActivityPage() {
 											to={bid.lotId ? `/lots/${bid.lotId}` : "#"}
 											className="text-sm text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors"
 										>
-											{bid.lotId ? `Lote #${bid.lotId.slice(-8).toUpperCase()}` : "—"}
+											{bid.lotId ? `Lote #${bid.lotId.slice(-8).toUpperCase()}` : "-"}
 										</Link>
 									</div>
 									<div className="flex items-center gap-4 text-right">

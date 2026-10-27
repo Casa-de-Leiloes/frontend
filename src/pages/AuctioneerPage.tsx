@@ -22,7 +22,7 @@ const PROVIDERS = [
 ] as const;
 
 function formatCents(cents: string | null | undefined): string {
-	if (!cents) return "—";
+	if (!cents) return "-";
 	return new Intl.NumberFormat("pt-BR", {
 		style: "currency",
 		currency: "BRL",
@@ -298,7 +298,7 @@ export function AuctioneerPage() {
 										>
 											<span className="font-medium">{item.title}</span>
 											{item.description && (
-												<span className="text-[#9CA3AF] ml-2 line-clamp-1">— {stripHtml(item.description)}</span>
+												<span className="text-[#9CA3AF] ml-2 line-clamp-1">· {stripHtml(item.description)}</span>
 											)}
 										</button>
 									))}
@@ -350,7 +350,7 @@ export function AuctioneerPage() {
 								</div>
 
 								<div className="space-y-2 sm:col-span-2">
-									<label className="text-sm font-medium text-[#374151]">Imagens adicionais (URLs — máx. 10)</label>
+									<label className="text-sm font-medium text-[#374151]">Imagens adicionais (URLs, máx. 10)</label>
 									{form.additionalImages.map((url, i) => (
 										<div key={i} className="flex gap-2">
 											<Input

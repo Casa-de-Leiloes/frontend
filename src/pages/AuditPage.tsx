@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { audit } from "@/lib/api";
 
 function formatCents(cents: string | null | undefined): string {
-	if (!cents) return "—";
+	if (!cents) return "-";
 	return new Intl.NumberFormat("pt-BR", {
 		style: "currency",
 		currency: "BRL",

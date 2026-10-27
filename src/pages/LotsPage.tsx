@@ -51,7 +51,7 @@ function IconCheck({ color }: { color: string }) {
 
 
 function formatCents(cents: string | null): string {
-	if (!cents) return "—";
+	if (!cents) return "-";
 	return new Intl.NumberFormat("pt-BR", {
 		style: "currency",
 		currency: "BRL",

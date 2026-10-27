@@ -9,7 +9,7 @@ import { translateError } from "@/lib/errors";
 import type { Bid } from "@/lib/api";
 
 function formatCents(cents: string | null | undefined): string {
-	if (!cents) return "—";
+	if (!cents) return "-";
 	return new Intl.NumberFormat("pt-BR", {
 		style: "currency",
 		currency: "BRL",
@@ -371,7 +371,7 @@ export function LotDetailPage() {
 									<span>✓ Você está liderando</span>
 								) : (
 									<span>
-										Você foi superado —{" "}
+										Você foi superado.{" "}
 										{position.gapToLeadCents
 											? `faltam ${formatCents(position.gapToLeadCents)}`
 											: "dê um lance para participar"}
