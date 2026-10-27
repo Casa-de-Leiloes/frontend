@@ -16,6 +16,7 @@ import { LotsPage } from "@/pages/LotsPage";
 import { LotDetailPage } from "@/pages/LotDetailPage";
 import { WalletPage } from "@/pages/WalletPage";
 import { AuctioneerPage } from "@/pages/AuctioneerPage";
+import { BidderPage } from "@/pages/BidderPage";
 import { MyActivityPage } from "@/pages/MyActivityPage";
 import { AuditPage } from "@/pages/AuditPage";
 import { ReceiptPage } from "@/pages/ReceiptPage";
@@ -81,6 +82,7 @@ export function App() {
 						<Routes>
 							<Route path="/" element={<LotsPage />} />
 							<Route path="/lots/:id" element={<LotDetailPage />} />
+							<Route path="/bidder" element={<RequireRole role="BIDDER"><BidderPage /></RequireRole>} />
 							<Route path="/wallet" element={<RequireRole role="BIDDER"><WalletPage /></RequireRole>} />
 							<Route path="/auctioneer" element={<RequireRole role="AUCTIONEER"><AuctioneerPage /></RequireRole>} />
 							<Route path="/activity" element={<RequireAuth><MyActivityPage /></RequireAuth>} />

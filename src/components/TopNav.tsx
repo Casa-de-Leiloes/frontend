@@ -165,6 +165,9 @@ export function TopNav() {
 						<>
 							{user.role === "BIDDER" && (
 								<>
+									<Link to="/bidder" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
+										Painel
+									</Link>
 									<Link to="/wallet" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
 										Carteira
 									</Link>
