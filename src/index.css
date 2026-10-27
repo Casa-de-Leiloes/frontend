@@ -19,6 +19,7 @@
   --color-accent: #1d5fbf;
   --color-accent-foreground: #ffffff;
   --radius: 0.5rem;
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
 }
 
 *,

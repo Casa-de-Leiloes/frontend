@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { CatalogItem } from "@/lib/api";
 
+function stripHtml(html: string): string {
+	return html.replace(/<[^>]*>/g, " ").replace(/\s{2,}/g, " ").trim();
+}
+
 const PROVIDERS = [
 	{ key: "ART_INSTITUTE_CHICAGO", label: "Art Institute of Chicago" },
 	{ key: "SCRYFALL", label: "Magic: the Gathering (Scryfall)" },
@@ -143,7 +147,7 @@ export function AuctioneerPage() {
 			...prev,
 			selectedItem: item,
 			title: item.title,
-			description: item.description,
+			description: item.description ? stripHtml(item.description) : "",
 		}));
 	}
 
@@ -223,7 +227,7 @@ export function AuctioneerPage() {
 									<span className="font-medium">{item.title}</span>
 									{item.description && (
 										<span className="text-muted-foreground ml-2 line-clamp-1">
-											— {item.description}
+											— {stripHtml(item.description)}
 										</span>
 									)}
 								</button>

@@ -96,7 +96,7 @@ function LotCard({ lot }: { lot: Lot }) {
 	return (
 		<Link to={`/lots/${lot.id}`} className="group block">
 			<div
-				className="bg-white border rounded-lg overflow-hidden transition-all hover:border-[#c0c0c0]"
+				className="bg-white border rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
 				style={{ borderColor: "#e6e6e6" }}
 			>
 				{/* Image */}
@@ -108,26 +108,45 @@ function LotCard({ lot }: { lot: Lot }) {
 						<img
 							src={lot.imageUrl}
 							alt={lot.title}
-							className="w-full h-full object-cover"
+							className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
 							loading="lazy"
 						/>
 					) : (
 						<div className="w-full h-full flex items-center justify-center">
-							<span className="text-[#c0c0c0] text-xs">Sem imagem</span>
+							<svg
+								width="40"
+								height="40"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="#d1d5db"
+								strokeWidth="1"
+							>
+								<rect x="3" y="3" width="18" height="18" rx="2" />
+								<circle cx="8.5" cy="8.5" r="1.5" />
+								<path d="m21 15-5-5L5 21" />
+							</svg>
 						</div>
 					)}
 					{/* Status badge overlay */}
 					<div className="absolute top-2 left-2">
 						<StatusBadge status={lot.status} />
 					</div>
+					{/* Bid count pill */}
+					{lot.bidCount > 0 && (
+						<div className="absolute bottom-2 right-2">
+							<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/50 text-white backdrop-blur-sm">
+								{lot.bidCount} {lot.bidCount === 1 ? "lance" : "lances"}
+							</span>
+						</div>
+					)}
 				</div>
 
 				{/* Body */}
 				<div className="p-4">
-					<p className="text-xs text-[#9ca3af] mb-1 uppercase tracking-wide">
+					<p className="text-[10px] text-[#9ca3af] mb-1 uppercase tracking-widest">
 						{lot.category.replace(/_/g, " ")}
 					</p>
-					<h2 className="text-sm font-semibold text-[#0a0a0a] line-clamp-2 mb-3 leading-snug">
+					<h2 className="text-sm font-semibold text-[#0a0a0a] line-clamp-2 mb-3 leading-snug group-hover:text-[#1d5fbf] transition-colors">
 						{lot.title}
 					</h2>
 
@@ -136,25 +155,22 @@ function LotCard({ lot }: { lot: Lot }) {
 						style={{ borderColor: "#f0f0f0" }}
 					>
 						<div>
-							<p className="text-[10px] text-[#9ca3af] uppercase tracking-wide mb-0.5">
+							<p className="text-[10px] text-[#9ca3af] uppercase tracking-widest mb-0.5">
 								Lance atual
 							</p>
 							<p
-								className="text-lg font-bold tabular-nums leading-none"
-								style={{ color: "#1d5fbf", fontVariantNumeric: "tabular-nums" }}
+								className="text-2xl font-bold tabular-nums leading-none"
+								style={{ color: "#1d5fbf" }}
 							>
 								{formatCents(bidCents)}
 							</p>
 						</div>
-						<div className="text-right">
-							<p className="text-[10px] text-[#9ca3af] uppercase tracking-wide mb-0.5">
+						<div className="text-right shrink-0">
+							<p className="text-[10px] text-[#9ca3af] uppercase tracking-widest mb-0.5">
 								{lot.status === "LIVE" ? "Encerra em" : "Encerra"}
 							</p>
 							<p className="text-sm font-mono font-medium text-[#0a0a0a] tabular-nums">
 								{countdown}
-							</p>
-							<p className="text-[10px] text-[#9ca3af] mt-0.5">
-								{lot.bidCount} {lot.bidCount === 1 ? "lance" : "lances"}
 							</p>
 						</div>
 					</div>
