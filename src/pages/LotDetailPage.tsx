@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Bid } from "@/lib/api";
 
-
 function formatCents(cents: string | null | undefined): string {
 	if (!cents) return "—";
 	return new Intl.NumberFormat("pt-BR", {
@@ -33,12 +32,7 @@ function pad(n: number): string {
 	return String(n).padStart(2, "0");
 }
 
-function splitMs(ms: number): {
-	dias: string;
-	hr: string;
-	min: string;
-	seg: string;
-} {
+function splitMs(ms: number) {
 	const total = Math.floor(ms / 1000);
 	return {
 		dias: String(Math.floor(total / 86400)).padStart(2, "0"),
@@ -48,38 +42,40 @@ function splitMs(ms: number): {
 	};
 }
 
-function CountdownBox({
-	value,
-	label,
-	urgent,
-}: {
-	value: string;
-	label: string;
-	urgent: boolean;
-}) {
-	return (
-		<div className="flex flex-col items-center bg-[#f2f4f7] rounded-lg py-3 px-1 min-w-0">
-			<span
-				className="text-2xl font-bold tabular-nums leading-none"
-				style={{ color: urgent ? "#c0392b" : "#0a0a0a" }}
-			>
-				{value}
-			</span>
-			<span className="text-[9px] uppercase tracking-widest text-[#9ca3af] mt-1.5">
-				{label}
-			</span>
-		</div>
-	);
-}
-
-function SegmentedCountdown({ ms, urgent }: { ms: number; urgent: boolean }) {
+function CountdownBanner({ ms, urgent }: { ms: number; urgent: boolean }) {
 	const { dias, hr, min, seg } = splitMs(ms);
 	return (
-		<div className="grid grid-cols-4 gap-1.5">
-			<CountdownBox value={dias} label="DIAS" urgent={urgent} />
-			<CountdownBox value={hr} label="HR" urgent={urgent} />
-			<CountdownBox value={min} label="MIN" urgent={urgent} />
-			<CountdownBox value={seg} label="SEG" urgent={urgent} />
+		<div className="flex items-center gap-1">
+			{[
+				{ v: dias, l: "DIAS" },
+				{ v: hr, l: "HR" },
+				{ v: min, l: "MIN" },
+				{ v: seg, l: "SEG" },
+			].map(({ v, l }, i) => (
+				<div key={l}>
+					<div className="flex items-center gap-1">
+						{i > 0 && (
+							<span
+								className="text-xl font-bold"
+								style={{ color: urgent ? "#DC2626" : "#0D0D0D" }}
+							>
+								:
+							</span>
+						)}
+						<div className="flex flex-col items-center">
+							<span
+								className="text-2xl font-bold tabular-nums leading-none"
+								style={{ color: urgent ? "#DC2626" : "#0D0D0D" }}
+							>
+								{v}
+							</span>
+							<span className="text-[9px] uppercase tracking-widest text-[#9CA3AF]">
+								{l}
+							</span>
+						</div>
+					</div>
+				</div>
+			))}
 		</div>
 	);
 }
@@ -185,7 +181,7 @@ export function LotDetailPage() {
 
 	if (!lot)
 		return (
-			<div className="flex items-center justify-center h-64 text-[#6b6b6b] text-sm">
+			<div className="flex items-center justify-center h-64 text-[#6B7280] text-sm">
 				Carregando…
 			</div>
 		);
@@ -195,244 +191,259 @@ export function LotDetailPage() {
 		: Number(lot.startingBidCents);
 
 	return (
-		<div className="max-w-6xl">
-			{/* Breadcrumb */}
-			<div className="flex items-center gap-1.5 text-xs text-[#9ca3af] mb-5">
-				<Link to="/lots" className="hover:text-[#0a0a0a]">
-					Leilões
-				</Link>
-				<span>/</span>
-				<span className="text-[#6b6b6b] line-clamp-1">{lot.title}</span>
+		<div className="bg-white">
+			{/* Top bar: breadcrumb + countdown */}
+			<div className="border-b border-[#E4E4E2] bg-white sticky top-14 z-10">
+				<div className="max-w-7xl mx-auto px-6 h-12 flex items-center justify-between">
+					<nav className="flex items-center gap-1.5 text-xs text-[#9CA3AF]">
+						<Link to="/" className="hover:text-[#0D0D0D]">Leilões</Link>
+						<span>/</span>
+						<span className="text-[#6B7280] truncate max-w-xs">{lot.title}</span>
+					</nav>
+					{isLive && remaining > 0 && (
+						<div className="flex items-center gap-3">
+							<span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#DC2626] uppercase">
+								<span className="w-1.5 h-1.5 rounded-full bg-[#DC2626] animate-pulse" />
+								Ao vivo
+							</span>
+							<CountdownBanner ms={remaining} urgent={isUrgent} />
+						</div>
+					)}
+					{!isLive && (
+						<span className="text-xs text-[#9CA3AF]">
+							{lot.status === "CLOSED" ? "Encerrado" : "Agendado"}
+						</span>
+					)}
+				</div>
 			</div>
 
-			{/* Two-column grid */}
-			<div className="grid lg:grid-cols-[3fr_2fr] gap-8 items-start">
-				{/* LEFT column */}
-				<div className="space-y-6">
-					{/* Image */}
-					<div
-						className="w-full bg-[#f2f4f7] rounded-xl overflow-hidden"
-						style={{ aspectRatio: "4/3" }}
+			<div className="max-w-7xl mx-auto px-6 py-8">
+				{/* Title row */}
+				<div className="mb-6">
+					<p className="text-xs text-[#9CA3AF] uppercase tracking-wider mb-1">
+						{lot.category.replace(/_/g, " ")}
+					</p>
+					<h1
+						className="text-2xl md:text-3xl font-bold text-[#0D0D0D] leading-tight"
+						style={{ fontFamily: "var(--font-display)" }}
 					>
-						{lot.imageUrl ? (
-							<img
-								src={lot.imageUrl}
-								alt={lot.title}
-								className="w-full h-full object-cover"
-							/>
-						) : (
-							<div className="w-full h-full flex items-center justify-center">
-								<svg
-									width="64"
-									height="64"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="#d1d5db"
-									strokeWidth="1"
-								>
-									<rect x="3" y="3" width="18" height="18" rx="2" />
-									<circle cx="8.5" cy="8.5" r="1.5" />
-									<path d="m21 15-5-5L5 21" />
-								</svg>
-							</div>
-						)}
-					</div>
-
-					{/* Title + category */}
-					<div>
-						<p className="text-xs font-medium uppercase tracking-widest text-[#9ca3af] mb-2">
-							{lot.category.replace(/_/g, " ")}
-						</p>
-						<h1 className="font-serif text-3xl font-bold text-[#0a0a0a] leading-tight">
-							{lot.title}
-						</h1>
-					</div>
-
-					{/* Description */}
-					{lot.description && (
-						<div className="text-sm text-[#6b6b6b] leading-relaxed border-t border-[#f0f0f0] pt-4">
-							{lot.description}
-						</div>
-					)}
-
-					{/* Bid history */}
-					<div className="bg-white border border-[#e6e6e6] rounded-xl p-5">
-						<div className="flex items-center justify-between mb-4">
-							<h2 className="text-sm font-semibold text-[#0a0a0a]">
-								Histórico de lances{" "}
-								<span className="text-[#9ca3af] font-normal">
-									({liveBids.length})
-								</span>
-							</h2>
-							<Link
-								to={`/audit/${lot.id}`}
-								className="text-xs text-[#9ca3af] hover:text-[#0a0a0a] underline"
-							>
-								Verificar cadeia →
-							</Link>
-						</div>
-
-						{liveBids.length === 0 ? (
-							<p className="text-sm text-[#9ca3af]">Nenhum lance ainda.</p>
-						) : (
-							<div className="space-y-0">
-								{[...liveBids].reverse().map((bid) => (
-									<div
-										key={bid.id}
-										className="flex justify-between items-center py-2.5 border-b border-[#f0f0f0] last:border-0 text-sm"
-									>
-										<span className="text-[#6b6b6b]">{bid.pseudonym}</span>
-										<span className="font-semibold font-mono tabular-nums text-[#0a0a0a]">
-											{formatCents(bid.amountCents)}
-										</span>
-										<span className="text-xs text-[#9ca3af]">
-											{new Date(bid.placedAt).toLocaleTimeString("pt-BR")}
-										</span>
-									</div>
-								))}
-							</div>
-						)}
-					</div>
+						{lot.title}
+					</h1>
 				</div>
 
-				{/* RIGHT column — sticky bid panel */}
-				<div className="lg:sticky lg:top-6 space-y-4">
-					{/* Status badge */}
-					<div>
-						{isLive ? (
-							<span
-								className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
-								style={{ background: "#1d5fbf", color: "#fff" }}
-							>
-								<span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-1.5 animate-pulse" />
-								AO VIVO
-							</span>
-						) : (
-							<span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#f0f0f0] text-[#6b6b6b]">
-								{lot.status === "SCHEDULED"
-									? "AGENDADO"
-									: lot.status === "CLOSED"
-										? "ENCERRADO"
-										: lot.status}
-							</span>
-						)}
-					</div>
-
-					{/* Countdown */}
-					{isLive && remaining > 0 ? (
-						<div>
-							<p className="text-[10px] uppercase tracking-widest text-[#9ca3af] mb-2">
-								Encerra em
-							</p>
-							<SegmentedCountdown ms={remaining} urgent={isUrgent} />
-						</div>
-					) : (
-						<div className="bg-[#f2f4f7] rounded-lg px-4 py-3">
-							<p className="text-[10px] uppercase tracking-widest text-[#9ca3af] mb-1">
-								{lot.status === "CLOSED" ? "Encerrado em" : "Previsto para"}
-							</p>
-							<p className="text-sm font-semibold text-[#0a0a0a]">
-								{new Date(lot.endsAt).toLocaleString("pt-BR", {
-									day: "2-digit",
-									month: "2-digit",
-									year: "numeric",
-									hour: "2-digit",
-									minute: "2-digit",
-								})}
-							</p>
-						</div>
-					)}
-
-					{/* Current bid */}
-					<div className="bg-white border border-[#e6e6e6] rounded-xl p-5">
-						<p className="text-[10px] uppercase tracking-widest text-[#9ca3af] mb-2">
-							Lance atual
-						</p>
-						<p
-							className="text-4xl font-bold tabular-nums leading-none"
-							style={{ color: "#1d5fbf" }}
-						>
-							{formatCents(lot.currentBidCents ?? lot.startingBidCents)}
-						</p>
-						<p className="text-xs text-[#9ca3af] mt-2">
-							{lot.bidCount} {lot.bidCount === 1 ? "lance" : "lances"} ·{" "}
-							Incremento mínimo {formatCents(lot.minIncrementCents)}
-						</p>
-					</div>
-
-					{/* Position pill (BIDDER only, LIVE) */}
-					{user?.role === "BIDDER" && isLive && position && (
-						<div
-							className={`rounded-lg border px-4 py-3 text-sm font-medium ${
-								position.isLeading
-									? "border-green-600/30 bg-green-50 text-green-800"
-									: "border-orange-500/30 bg-orange-50 text-orange-800"
-							}`}
-						>
-							{position.isLeading ? (
-								<span>✓ Você está liderando</span>
+				{/* Two columns */}
+				<div className="grid lg:grid-cols-[3fr_2fr] gap-8 items-start">
+					{/* LEFT */}
+					<div className="space-y-6">
+						{/* Main image */}
+						<div className="rounded-xl overflow-hidden bg-[#F5F4F0]" style={{ aspectRatio: "4/3" }}>
+							{lot.imageUrl ? (
+								<img
+									src={lot.imageUrl}
+									alt={lot.title}
+									className="w-full h-full object-contain"
+								/>
 							) : (
-								<span>
-									Você foi superado —{" "}
-									{position.gapToLeadCents
-										? `faltam ${formatCents(position.gapToLeadCents)}`
-										: "dê um lance para participar"}
-								</span>
-							)}
-						</div>
-					)}
-
-					{/* Bid form (BIDDER + LIVE) */}
-					{user?.role === "BIDDER" && isLive && (
-						<div className="bg-white border border-[#e6e6e6] rounded-xl p-5 space-y-3">
-							{balance && (
-								<div className="flex justify-between text-xs text-[#9ca3af]">
-									<span>
-										Disponível:{" "}
-										<span className="font-semibold text-[#0a0a0a]">
-											{formatCents(balance.availableCents)}
-										</span>
-									</span>
-									<span>
-										Mínimo:{" "}
-										<span className="font-semibold text-[#0a0a0a]">
-											{formatCents(String(minNext))}
-										</span>
-									</span>
+								<div className="w-full h-full flex items-center justify-center">
+									<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1">
+										<rect x="3" y="3" width="18" height="18" rx="2"/>
+										<circle cx="8.5" cy="8.5" r="1.5"/>
+										<path d="m21 15-5-5L5 21"/>
+									</svg>
 								</div>
 							)}
-							<form onSubmit={handlePlaceBid} className="flex gap-2">
-								<Input
-									type="number"
-									step="0.01"
-									min={(minNext / 100).toFixed(2)}
-									placeholder={`Mín. R$ ${(minNext / 100).toFixed(2)}`}
-									value={bidAmount}
-									onChange={(e) => setBidAmount(e.target.value)}
-									required
-									className="flex-1"
-								/>
-								<Button type="submit" disabled={placing}>
-									{placing ? "…" : "Lançar"}
-								</Button>
-							</form>
-							{bidError && (
-								<p className="text-sm text-[#c0392b] bg-red-50 border border-red-200 rounded px-3 py-2">
-									{bidError}
+						</div>
+
+						{/* Description */}
+						{lot.description && (
+							<div className="bg-white border border-[#E4E4E2] rounded-xl p-5">
+								<h2 className="text-sm font-semibold text-[#0D0D0D] mb-3">
+									Descrição
+								</h2>
+								<p className="text-sm text-[#6B7280] leading-relaxed">
+									{lot.description}
 								</p>
+							</div>
+						)}
+
+						{/* Bid history */}
+						<div className="bg-white border border-[#E4E4E2] rounded-xl p-5">
+							<div className="flex items-center justify-between mb-4">
+								<h2 className="text-sm font-semibold text-[#0D0D0D]">
+									Histórico de lances{" "}
+									<span className="text-[#9CA3AF] font-normal">
+										({liveBids.length})
+									</span>
+								</h2>
+								<Link
+									to={`/audit/${lot.id}`}
+									className="text-xs text-[#9CA3AF] hover:text-[#0D0D0D] underline"
+								>
+									Verificar cadeia →
+								</Link>
+							</div>
+
+							{liveBids.length === 0 ? (
+								<p className="text-sm text-[#9CA3AF]">Nenhum lance ainda.</p>
+							) : (
+								<table className="w-full text-sm">
+									<thead>
+										<tr className="border-b border-[#F0F0EE]">
+											<th className="text-left text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider pb-2">Licitante</th>
+											<th className="text-right text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider pb-2">Valor</th>
+											<th className="text-right text-[10px] font-medium text-[#9CA3AF] uppercase tracking-wider pb-2">Horário</th>
+										</tr>
+									</thead>
+									<tbody>
+										{[...liveBids].reverse().map((bid, i) => (
+											<tr
+												key={bid.id}
+												className="border-b border-[#F9F9F9] last:border-0"
+											>
+												<td className="py-2.5 text-[#6B7280]">
+													{i === 0 && (
+														<span className="inline-block w-2 h-2 rounded-full bg-[#16A34A] mr-1.5" />
+													)}
+													{bid.pseudonym}
+												</td>
+												<td className="py-2.5 text-right font-semibold tabular-nums text-[#0D0D0D]" style={{ fontFamily: "var(--font-mono)" }}>
+													{formatCents(bid.amountCents)}
+												</td>
+												<td className="py-2.5 text-right text-xs text-[#9CA3AF]">
+													{new Date(bid.placedAt).toLocaleTimeString("pt-BR")}
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
 							)}
 						</div>
-					)}
+					</div>
 
-					{/* Not logged in prompt */}
-					{!user && isLive && (
-						<Link
-							to="/login"
-							className="block text-center w-full bg-[#141414] text-white rounded-lg py-3 text-sm font-semibold hover:bg-[#2a2a2a] transition-colors"
-						>
-							Entrar para dar lance
-						</Link>
-					)}
+					{/* RIGHT sticky panel */}
+					<div className="lg:sticky lg:top-28 space-y-4">
+						{/* Current bid card */}
+						<div className="bg-white border border-[#E4E4E2] rounded-xl p-5">
+							<p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] mb-1">
+								Licitação atual
+							</p>
+							<p
+								className="text-4xl font-bold tabular-nums leading-none mb-1"
+								style={{ color: "#1D4ED8", fontFamily: "var(--font-mono)" }}
+							>
+								{formatCents(lot.currentBidCents ?? lot.startingBidCents)}
+							</p>
+							<p className="text-xs text-[#9CA3AF]">
+								{lot.bidCount} {lot.bidCount === 1 ? "lance" : "lances"} ·{" "}
+								Incremento mínimo {formatCents(lot.minIncrementCents)}
+							</p>
+						</div>
+
+						{/* Position pill (BIDDER only, LIVE) */}
+						{user?.role === "BIDDER" && isLive && position && (
+							<div
+								className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+									position.isLeading
+										? "border-green-600/30 bg-green-50 text-green-800"
+										: "border-orange-500/30 bg-orange-50 text-orange-800"
+								}`}
+							>
+								{position.isLeading ? (
+									<span>✓ Você está liderando</span>
+								) : (
+									<span>
+										Você foi superado —{" "}
+										{position.gapToLeadCents
+											? `faltam ${formatCents(position.gapToLeadCents)}`
+											: "dê um lance para participar"}
+									</span>
+								)}
+							</div>
+						)}
+
+						{/* Bid form (BIDDER + LIVE) */}
+						{user?.role === "BIDDER" && isLive && (
+							<div className="bg-white border border-[#E4E4E2] rounded-xl p-5 space-y-3">
+								{balance && (
+									<div className="flex justify-between text-xs text-[#9CA3AF]">
+										<span>
+											Disponível:{" "}
+											<span className="font-semibold text-[#0D0D0D]">
+												{formatCents(balance.availableCents)}
+											</span>
+										</span>
+										<span>
+											Mínimo:{" "}
+											<span className="font-semibold text-[#0D0D0D]">
+												{formatCents(String(minNext))}
+											</span>
+										</span>
+									</div>
+								)}
+								<form onSubmit={handlePlaceBid} className="flex gap-2">
+									<Input
+										type="number"
+										step="0.01"
+										min={(minNext / 100).toFixed(2)}
+										placeholder={`Mín. R$ ${(minNext / 100).toFixed(2)}`}
+										value={bidAmount}
+										onChange={(e) => setBidAmount(e.target.value)}
+										required
+										className="flex-1"
+									/>
+									<Button type="submit" disabled={placing}>
+										{placing ? "…" : "Lançar"}
+									</Button>
+								</form>
+								{bidError && (
+									<p className="text-sm text-[#DC2626] bg-red-50 border border-red-200 rounded px-3 py-2">
+										{bidError}
+									</p>
+								)}
+							</div>
+						)}
+
+						{/* Status panel for non-LIVE */}
+						{!isLive && (
+							<div className="bg-[#F9F9F7] border border-[#E4E4E2] rounded-xl p-5">
+								<p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] mb-1">
+									{lot.status === "CLOSED" ? "Encerrado em" : "Previsto para"}
+								</p>
+								<p className="text-sm font-semibold text-[#0D0D0D]">
+									{new Date(lot.endsAt).toLocaleString("pt-BR", {
+										day: "2-digit",
+										month: "2-digit",
+										year: "numeric",
+										hour: "2-digit",
+										minute: "2-digit",
+									})}
+								</p>
+							</div>
+						)}
+
+						{/* Not logged in prompt */}
+						{!user && isLive && (
+							<Link
+								to="/login"
+								className="block text-center w-full bg-[#0D0D0D] text-white rounded-xl py-3.5 text-sm font-semibold hover:bg-[#1D4ED8] transition-colors duration-200"
+							>
+								Entrar para dar lance
+							</Link>
+						)}
+
+						{/* Trust badges */}
+						<div className="bg-white border border-[#E4E4E2] rounded-xl p-4">
+							<div className="flex items-start gap-3 text-xs text-[#6B7280]">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2" className="mt-0.5 flex-none">
+									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+								</svg>
+								<div>
+									<p className="font-semibold text-[#0D0D0D] mb-0.5">Proteção do comprador</p>
+									<p>Todos os lances são auditáveis com hash chain criptográfico. Integridade garantida.</p>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
