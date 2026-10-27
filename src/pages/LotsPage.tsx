@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { lots, imgProxy } from "@/lib/api";
@@ -294,10 +294,44 @@ function SectionRow({
 	);
 }
 
+function LotCardSkeleton() {
+	return (
+		<div className="bg-white rounded-xl border border-[#E4E4E2] overflow-hidden animate-pulse">
+			<div className="w-full bg-[#F3F4F6]" style={{ aspectRatio: "1/1" }} />
+			<div className="p-3 space-y-2">
+				<div className="h-2.5 bg-[#F3F4F6] rounded w-1/3" />
+				<div className="h-4 bg-[#F3F4F6] rounded w-3/4" />
+				<div className="h-3.5 bg-[#F3F4F6] rounded w-1/2 mt-1" />
+				<div className="border-t border-[#F0F0EE] pt-2.5 space-y-1">
+					<div className="h-2 bg-[#F3F4F6] rounded w-1/4" />
+					<div className="h-6 bg-[#F3F4F6] rounded w-2/5" />
+				</div>
+			</div>
+		</div>
+	);
+}
+
 export function LotsPage() {
 	const [searchParams, setSearchParams] = useSearchParams();
-	const [filter, setFilter] = useState<StatusFilter>("ALL");
 	const [timeFilter, setTimeFilter] = useState<TimeFilter>("NONE");
+
+	// Derive filter from URL so nav tab links work
+	const urlStatus = searchParams.get("status");
+	const filter: StatusFilter =
+		urlStatus === "LIVE" || urlStatus === "SCHEDULED" || urlStatus === "CLOSED"
+			? urlStatus
+			: "ALL";
+	const setFilter = useCallback(
+		(s: StatusFilter) => {
+			setSearchParams((prev) => {
+				const next = new URLSearchParams(prev);
+				if (s === "ALL") next.delete("status");
+				else next.set("status", s);
+				return next;
+			});
+		},
+		[setSearchParams],
+	);
 
 	const urlCategory = searchParams.get("lotCategory") ?? undefined;
 
@@ -323,8 +357,19 @@ export function LotsPage() {
 
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center h-64 text-sm text-[#6B7280]">
-				Carregando lotes…
+			<div className="max-w-7xl mx-auto px-6 py-8">
+				<div className="w-full h-48 bg-[#F3F4F6] rounded-2xl animate-pulse mb-10" />
+				<div className="flex gap-2 mb-8">
+					{Array.from({ length: 5 }).map((_, i) => (
+						<div key={i} className="h-8 w-24 bg-[#F3F4F6] rounded-full animate-pulse" />
+					))}
+				</div>
+				<div className="mb-4 h-5 w-32 bg-[#F3F4F6] rounded animate-pulse" />
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					{Array.from({ length: 8 }).map((_, i) => (
+						<LotCardSkeleton key={i} />
+					))}
+				</div>
 			</div>
 		);
 	}

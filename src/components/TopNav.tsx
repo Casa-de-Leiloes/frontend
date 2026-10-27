@@ -44,7 +44,7 @@ const CATEGORIES = [
 	},
 	{
 		label: "Arte",
-		href: "/?cat=FINE_ART",
+		href: "/?lotCategory=FINE_ART",
 		icon: (
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
 				<path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10-4.48 10-10 10"/>
@@ -55,7 +55,7 @@ const CATEGORIES = [
 	},
 	{
 		label: "Joalharia",
-		href: "/?cat=JEWELRY",
+		href: "/?lotCategory=JEWELRY",
 		icon: (
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
 				<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -64,7 +64,7 @@ const CATEGORIES = [
 	},
 	{
 		label: "Relógios",
-		href: "/?cat=WATCHES",
+		href: "/?lotCategory=WATCHES",
 		icon: (
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
 				<circle cx="12" cy="12" r="7"/>
@@ -75,7 +75,7 @@ const CATEGORIES = [
 	},
 	{
 		label: "Antiguidades",
-		href: "/?cat=ANTIQUES",
+		href: "/?lotCategory=ANTIQUITIES",
 		icon: (
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
 				<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -85,7 +85,7 @@ const CATEGORIES = [
 	},
 	{
 		label: "Numismática",
-		href: "/?cat=NUMISMATICS",
+		href: "/?lotCategory=NUMISMATICS",
 		icon: (
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
 				<circle cx="12" cy="12" r="9"/>
@@ -95,7 +95,7 @@ const CATEGORIES = [
 	},
 	{
 		label: "Moda",
-		href: "/?cat=FASHION",
+		href: "/?lotCategory=FASHION",
 		icon: (
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
 				<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
