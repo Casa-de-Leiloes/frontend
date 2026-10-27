@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { lots } from "@/lib/api";
@@ -187,6 +187,104 @@ function LotCard({ lot }: { lot: Lot }) {
 	);
 }
 
+function HeroLot({ lot }: { lot: Lot }) {
+	const timeLeft = useTimeLeft(lot.endsAt);
+	const bidCents = lot.currentBidCents ?? lot.startingBidCents;
+	return (
+		<Link to={`/lots/${lot.id}`} className="group block w-full">
+			<div className="relative w-full rounded-2xl overflow-hidden bg-[#0D0D0D]" style={{ minHeight: 320 }}>
+				{/* Background image */}
+				{lot.imageUrl && (
+					<img
+						src={lot.imageUrl}
+						alt={lot.title}
+						className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-50 transition-opacity duration-500"
+					/>
+				)}
+				{!lot.imageUrl && (
+					<div className="absolute inset-0 bg-gradient-to-br from-[#1D4ED8]/30 to-[#0D0D0D]" />
+				)}
+				{/* Content overlay */}
+				<div className="relative z-10 flex flex-col justify-end p-8 h-full" style={{ minHeight: 320 }}>
+					<div className="mb-3">
+						<LiveBadge />
+					</div>
+					<p className="text-white/60 text-xs tracking-wider uppercase mb-2">
+						{lot.category.replace(/_/g, " ")}
+					</p>
+					<h2
+						className="text-white text-3xl md:text-4xl font-bold leading-tight mb-4 max-w-2xl"
+						style={{ fontFamily: "var(--font-display)" }}
+					>
+						{lot.title}
+					</h2>
+					<div className="flex items-end gap-6">
+						<div>
+							<p className="text-white/50 text-[10px] uppercase tracking-wider mb-1">Licitação atual</p>
+							<p className="text-white text-2xl font-bold tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
+								{formatCents(bidCents)}
+							</p>
+						</div>
+						<div>
+							<p className="text-white/50 text-[10px] uppercase tracking-wider mb-1">Encerra</p>
+							<p
+								className="text-sm font-semibold"
+								style={{ color: timeLeft.urgent ? "#FCA5A5" : "#D1D5DB" }}
+							>
+								{timeLeft.text}
+							</p>
+						</div>
+						{lot.bidCount > 0 && (
+							<div>
+								<p className="text-white/50 text-[10px] uppercase tracking-wider mb-1">Lances</p>
+								<p className="text-sm font-semibold text-white/80">{lot.bidCount}</p>
+							</div>
+						)}
+					</div>
+					<div className="mt-5">
+						<span className="inline-flex items-center bg-white text-[#0D0D0D] text-sm font-semibold px-5 py-2.5 rounded-full group-hover:bg-[#1D4ED8] group-hover:text-white transition-colors duration-200">
+							Dar lance →
+						</span>
+					</div>
+				</div>
+			</div>
+		</Link>
+	);
+}
+
+function SectionRow({
+	title,
+	icon,
+	lots: sectionLots,
+}: {
+	title: string;
+	icon: ReactNode;
+	lots: Lot[];
+}) {
+	if (sectionLots.length === 0) return null;
+	return (
+		<section className="mb-10">
+			<div className="flex items-center justify-between mb-4">
+				<h2 className="flex items-center gap-2 text-lg font-bold text-[#0D0D0D]">
+					{icon}
+					{title}
+					<span className="text-sm font-normal text-[#9CA3AF]">({sectionLots.length})</span>
+				</h2>
+			</div>
+			<div
+				className="flex gap-4 overflow-x-auto pb-2"
+				style={{ scrollbarWidth: "none" }}
+			>
+				{sectionLots.map((lot) => (
+					<div key={lot.id} className="flex-none w-64">
+						<LotCard lot={lot} />
+					</div>
+				))}
+			</div>
+		</section>
+	);
+}
+
 export function LotsPage() {
 	const [filter, setFilter] = useState<StatusFilter>("ALL");
 
@@ -197,86 +295,114 @@ export function LotsPage() {
 	});
 
 	const allLots = data?.items.filter((l) => l.status !== "CANCELLED") ?? [];
+	const liveLots = allLots.filter((l) => l.status === "LIVE");
+	const scheduledLots = allLots.filter((l) => l.status === "SCHEDULED");
+	const closedLots = allLots.filter((l) => l.status === "CLOSED");
+	const heroLot = liveLots[0] ?? scheduledLots[0] ?? null;
+
 	const filtered =
 		filter === "ALL" ? allLots : allLots.filter((l) => l.status === filter);
 
+	if (isLoading) {
+		return (
+			<div className="flex items-center justify-center h-64 text-sm text-[#6B7280]">
+				Carregando lotes…
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className="flex items-center justify-center h-64 text-sm text-[#DC2626]">
+				Falha ao carregar lotes.
+			</div>
+		);
+	}
+
 	return (
 		<div className="max-w-7xl mx-auto px-6 py-8">
-			{/* Header */}
-			<div className="mb-5">
-				<h1
-					className="text-3xl font-bold text-[#0D0D0D] mb-4"
-					style={{ fontFamily: "var(--font-display)" }}
-				>
-					Leilões
-				</h1>
-
-				{/* Filter chips */}
-				<div className="flex items-center gap-2 flex-wrap">
-					{FILTERS.map((f) => {
-						const cnt =
-							f.value === "ALL"
-								? allLots.length
-								: allLots.filter((l) => l.status === f.value).length;
-						const active = filter === f.value;
-						return (
-							<button
-								key={f.value}
-								type="button"
-								onClick={() => setFilter(f.value)}
-								className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
-								style={{
-									background: active ? "#0D0D0D" : "#FFFFFF",
-									color: active ? "#FFFFFF" : "#6B7280",
-									border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
-								}}
-							>
-								{f.value === "ALL" && (
-									<IconGrid color={active ? "#fff" : "#6B7280"} />
-								)}
-								{f.value === "LIVE" && (
-									<span
-										className="w-2 h-2 rounded-full"
-										style={{ background: active ? "#fff" : "#DC2626" }}
-									/>
-								)}
-								{f.value === "SCHEDULED" && (
-									<IconClock color={active ? "#fff" : "#6B7280"} />
-								)}
-								{f.value === "CLOSED" && (
-									<IconCheck color={active ? "#fff" : "#6B7280"} />
-								)}
-								{f.label}
-								<span className="text-xs tabular-nums opacity-60">{cnt}</span>
-							</button>
-						);
-					})}
+			{/* Hero */}
+			{heroLot && filter === "ALL" && (
+				<div className="mb-10">
+					<HeroLot lot={heroLot} />
 				</div>
+			)}
+
+			{/* Filter chips */}
+			<div className="flex items-center gap-2 flex-wrap mb-8">
+				{FILTERS.map((f) => {
+					const cnt =
+						f.value === "ALL"
+							? allLots.length
+							: allLots.filter((l) => l.status === f.value).length;
+					const active = filter === f.value;
+					return (
+						<button
+							key={f.value}
+							type="button"
+							onClick={() => setFilter(f.value)}
+							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+							style={{
+								background: active ? "#0D0D0D" : "#FFFFFF",
+								color: active ? "#FFFFFF" : "#6B7280",
+								border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
+							}}
+						>
+							{f.value === "ALL" && <IconGrid color={active ? "#fff" : "#6B7280"} />}
+							{f.value === "LIVE" && (
+								<span className="w-2 h-2 rounded-full" style={{ background: active ? "#fff" : "#DC2626" }} />
+							)}
+							{f.value === "SCHEDULED" && <IconClock color={active ? "#fff" : "#6B7280"} />}
+							{f.value === "CLOSED" && <IconCheck color={active ? "#fff" : "#6B7280"} />}
+							{f.label}
+							<span className="text-xs tabular-nums opacity-60">{cnt}</span>
+						</button>
+					);
+				})}
 			</div>
 
-			{isLoading && (
-				<div className="flex items-center justify-center h-64 text-sm text-[#6B7280]">
-					Carregando lotes…
-				</div>
+			{/* Filtered single-status view */}
+			{filter !== "ALL" && (
+				<>
+					{filtered.length === 0 ? (
+						<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6B7280]">
+							Nenhum lote nesta categoria.
+						</div>
+					) : (
+						<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+							{filtered.map((lot) => (
+								<LotCard key={lot.id} lot={lot} />
+							))}
+						</div>
+					)}
+				</>
 			)}
 
-			{error && (
-				<div className="flex items-center justify-center h-64 text-sm text-[#DC2626]">
-					Falha ao carregar lotes.
-				</div>
+			{/* ALL view: marketplace sections */}
+			{filter === "ALL" && (
+				<>
+					<SectionRow
+						title="Leilões ao vivo"
+						icon={<span className="w-2.5 h-2.5 rounded-full bg-[#DC2626] animate-pulse" />}
+						lots={liveLots}
+					/>
+					<SectionRow
+						title="Agendados"
+						icon={<IconClock color="#6B7280" />}
+						lots={scheduledLots}
+					/>
+					<SectionRow
+						title="Encerrados"
+						icon={<IconCheck color="#6B7280" />}
+						lots={closedLots}
+					/>
+					{allLots.length === 0 && (
+						<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6B7280]">
+							Nenhum lote disponível no momento.
+						</div>
+					)}
+				</>
 			)}
-
-			{!isLoading && !error && filtered.length === 0 && (
-				<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6B7280]">
-					Nenhum lote nesta categoria.
-				</div>
-			)}
-
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-				{filtered.map((lot) => (
-					<LotCard key={lot.id} lot={lot} />
-				))}
-			</div>
 		</div>
 	);
 }
