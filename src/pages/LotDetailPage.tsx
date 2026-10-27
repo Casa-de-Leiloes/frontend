@@ -193,7 +193,7 @@ export function LotDetailPage() {
 	return (
 		<div className="bg-white">
 			{/* Top bar: breadcrumb + countdown */}
-			<div className="border-b border-[#E4E4E2] bg-white sticky top-14 z-10">
+			<div className="border-b border-[#E4E4E2] bg-white sticky top-[130px] z-10">
 				<div className="max-w-7xl mx-auto px-6 h-12 flex items-center justify-between">
 					<nav className="flex items-center gap-1.5 text-xs text-[#9CA3AF]">
 						<Link to="/" className="hover:text-[#0D0D0D]">Leilões</Link>
@@ -321,7 +321,7 @@ export function LotDetailPage() {
 					</div>
 
 					{/* RIGHT sticky panel */}
-					<div className="lg:sticky lg:top-28 space-y-4">
+					<div className="lg:sticky lg:top-[160px] space-y-4">
 						{/* Current bid card */}
 						<div className="bg-white border border-[#E4E4E2] rounded-xl p-5">
 							<p className="text-[10px] uppercase tracking-widest text-[#9CA3AF] mb-1">

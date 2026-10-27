@@ -52,7 +52,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="min-h-screen bg-[#F5F4F0]">
 			<TopNav />
-			<main className="pt-14 min-h-screen">
+			<main className="pt-[130px] min-h-screen">
 				{children}
 			</main>
 		</div>

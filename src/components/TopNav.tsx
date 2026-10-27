@@ -1,11 +1,102 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
+
+const CATEGORIES = [
+	{
+		label: "Esta semana",
+		href: "/",
+		icon: (
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+				<rect x="3" y="4" width="18" height="18" rx="2"/>
+				<line x1="16" y1="2" x2="16" y2="6"/>
+				<line x1="8" y1="2" x2="8" y2="6"/>
+				<line x1="3" y1="10" x2="21" y2="10"/>
+			</svg>
+		),
+	},
+	{
+		label: "Ao Vivo",
+		href: "/?status=LIVE",
+		icon: (
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+				<circle cx="12" cy="12" r="3"/>
+				<path d="M5.6 5.6a9 9 0 0 0 0 12.8"/>
+				<path d="M18.4 5.6a9 9 0 0 1 0 12.8"/>
+				<path d="M8.5 8.5a5 5 0 0 0 0 7"/>
+				<path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+			</svg>
+		),
+	},
+	{
+		label: "Arte",
+		href: "/?cat=FINE_ART",
+		icon: (
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+				<path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10-4.48 10-10 10"/>
+				<path d="M7 15c0-2.76 2.24-5 5-5s5 2.24 5 5"/>
+				<circle cx="12" cy="7" r="1"/>
+			</svg>
+		),
+	},
+	{
+		label: "Joalharia",
+		href: "/?cat=JEWELRY",
+		icon: (
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+				<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+			</svg>
+		),
+	},
+	{
+		label: "Relógios",
+		href: "/?cat=WATCHES",
+		icon: (
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+				<circle cx="12" cy="12" r="7"/>
+				<polyline points="12 9 12 12 13.5 13.5"/>
+				<path d="M9 1h6M9 23h6"/>
+			</svg>
+		),
+	},
+	{
+		label: "Antiguidades",
+		href: "/?cat=ANTIQUES",
+		icon: (
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+				<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+				<polyline points="9 22 9 12 15 12 15 22"/>
+			</svg>
+		),
+	},
+	{
+		label: "Numismática",
+		href: "/?cat=NUMISMATICS",
+		icon: (
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+				<circle cx="12" cy="12" r="9"/>
+				<path d="M12 6v2M12 16v2M8.5 9.5l1.5 1M14 13.5l1.5 1M6 12h2M16 12h2M8.5 14.5l1.5-1M14 10.5l1.5-1"/>
+			</svg>
+		),
+	},
+	{
+		label: "Moda",
+		href: "/?cat=FASHION",
+		icon: (
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+				<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+				<line x1="3" y1="6" x2="21" y2="6"/>
+				<path d="M16 10a4 4 0 0 1-8 0"/>
+			</svg>
+		),
+	},
+];
 
 export function TopNav() {
 	const user = useAuthStore((s) => s.user);
 	const setUser = useAuthStore((s) => s.setUser);
 	const navigate = useNavigate();
+	const location = useLocation();
 
 	async function handleSignOut() {
 		await auth.signOut().catch(() => {});
@@ -13,17 +104,15 @@ export function TopNav() {
 		navigate("/login");
 	}
 
+	const activeCat = location.pathname === "/" && !location.search ? CATEGORIES[0] : null;
+
 	return (
-		<header
-			className="fixed top-0 inset-x-0 z-30 bg-white border-b"
-			style={{ borderColor: "#E4E4E2" }}
-		>
-			<div className="max-w-7xl mx-auto px-6 h-14 flex items-center gap-6">
+		<header className="fixed top-0 inset-x-0 z-30 bg-white" style={{ borderBottom: "1px solid #E4E4E2" }}>
+			{/* Main bar */}
+			<div className="max-w-7xl mx-auto px-6 h-14 flex items-center gap-4">
 				{/* Logo */}
 				<Link to="/" className="flex-shrink-0 mr-2">
-					<span
-						className="text-[10px] font-semibold tracking-[0.2em] text-[#6B7280] uppercase block leading-none"
-					>
+					<span className="text-[10px] font-semibold tracking-[0.2em] text-[#9CA3AF] uppercase block leading-none">
 						Casa de
 					</span>
 					<span
@@ -34,15 +123,8 @@ export function TopNav() {
 					</span>
 				</Link>
 
-				{/* Primary nav */}
-				<nav className="flex items-center gap-1 flex-1">
-					<Link
-						to="/"
-						className="px-3 py-1.5 text-sm font-medium text-[#0D0D0D] hover:bg-[#F5F4F0] rounded-md transition-colors"
-					>
-						Lotes
-					</Link>
-				</nav>
+				{/* Spacer */}
+				<div className="flex-1" />
 
 				{/* Right side */}
 				<div className="flex items-center gap-3 flex-shrink-0">
@@ -50,30 +132,21 @@ export function TopNav() {
 						<>
 							{user.role === "BIDDER" && (
 								<>
-									<Link
-										to="/wallet"
-										className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors"
-									>
+									<Link to="/wallet" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
 										Carteira
 									</Link>
-									<Link
-										to="/activity"
-										className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors"
-									>
+									<Link to="/activity" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
 										Atividade
 									</Link>
 								</>
 							)}
 							{user.role === "AUCTIONEER" && (
-								<Link
-									to="/auctioneer"
-									className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors"
-								>
+								<Link to="/auctioneer" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
 									Painel
 								</Link>
 							)}
 							<div className="flex items-center gap-3 border-l pl-3" style={{ borderColor: "#E4E4E2" }}>
-								<span className="text-sm font-medium text-[#0D0D0D] max-w-[120px] truncate">
+								<span className="text-sm font-medium text-[#0D0D0D] max-w-[100px] truncate">
 									{user.name}
 								</span>
 								<button
@@ -87,20 +160,75 @@ export function TopNav() {
 						</>
 					) : (
 						<>
-							<Link
-								to="/login"
-								className="text-sm font-medium text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors"
-							>
+							<Link to="/login" className="text-sm font-medium text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors">
 								Entrar
 							</Link>
 							<Link
 								to="/register"
-								className="px-4 py-1.5 text-sm font-medium text-white bg-[#0D0D0D] rounded-md hover:bg-[#1a1a1a] transition-colors"
+								className="px-4 py-1.5 text-sm font-semibold text-white rounded-md transition-colors"
+								style={{ background: "#1D4ED8" }}
 							>
 								Criar conta
 							</Link>
 						</>
 					)}
+				</div>
+			</div>
+
+			{/* Trust bar */}
+			<div className="bg-[#F9FAFB] border-t border-b border-[#E4E4E2] py-1.5">
+				<div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-6 text-xs text-[#6B7280]">
+					<span className="flex items-center gap-1.5">
+						<span className="font-semibold text-[#0D0D0D]">Excelente</span>
+						<span className="flex gap-0.5">
+							{[1,2,3,4,5].map(i => (
+								<svg key={i} width="12" height="12" viewBox="0 0 12 12" fill={i <= 4 ? "#00B67A" : "none"}>
+									<polygon points="6 1 7.5 4.5 11 4.8 8.5 7 9.2 10.5 6 8.8 2.8 10.5 3.5 7 1 4.8 4.5 4.5" stroke="#00B67A" strokeWidth="0.5"/>
+								</svg>
+							))}
+						</span>
+						<span className="text-[#00B67A] font-medium">Trustpilot</span>
+					</span>
+					<span className="text-[#E4E4E2]">·</span>
+					<span className="flex items-center gap-1">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+						</svg>
+						Lances auditáveis com hash chain
+					</span>
+					<span className="text-[#E4E4E2]">·</span>
+					<span className="flex items-center gap-1">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2">
+							<rect x="3" y="11" width="18" height="11" rx="2"/>
+							<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+						</svg>
+						Dados protegidos pela LGPD
+					</span>
+				</div>
+			</div>
+
+			{/* Category tabs */}
+			<div className="max-w-7xl mx-auto px-6 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+				<div className="flex items-stretch gap-1">
+					{CATEGORIES.map((cat) => {
+						const isActive = activeCat?.label === cat.label;
+						return (
+							<Link
+								key={cat.label}
+								to={cat.href}
+								className="flex flex-col items-center gap-1 px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors flex-shrink-0 border-b-2"
+								style={{
+									color: isActive ? "#1D4ED8" : "#6B7280",
+									borderBottomColor: isActive ? "#1D4ED8" : "transparent",
+								}}
+							>
+								<span style={{ color: isActive ? "#1D4ED8" : "#9CA3AF" }}>
+									{cat.icon}
+								</span>
+								{cat.label}
+							</Link>
+						);
+					})}
 				</div>
 			</div>
 		</header>
