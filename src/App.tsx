@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
 	BrowserRouter,
 	Routes,
@@ -37,6 +37,19 @@ function AuthLoader({ children }: { children: React.ReactNode }) {
 
 const AUTH_ROUTES = ["/login", "/register"];
 
+function RequireRole({ role, children }: { role: "AUCTIONEER" | "BIDDER"; children: ReactNode }) {
+	const user = useAuthStore((s) => s.user);
+	if (!user) return <Navigate to="/login" replace />;
+	if (user.role !== role) return <Navigate to="/" replace />;
+	return <>{children}</>;
+}
+
+function RequireAuth({ children }: { children: ReactNode }) {
+	const user = useAuthStore((s) => s.user);
+	if (!user) return <Navigate to="/login" replace />;
+	return <>{children}</>;
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
 	const location = useLocation();
 	const isAuthRoute = AUTH_ROUTES.includes(location.pathname);
@@ -68,9 +81,9 @@ export function App() {
 						<Routes>
 							<Route path="/" element={<LotsPage />} />
 							<Route path="/lots/:id" element={<LotDetailPage />} />
-							<Route path="/wallet" element={<WalletPage />} />
-							<Route path="/auctioneer" element={<AuctioneerPage />} />
-							<Route path="/activity" element={<MyActivityPage />} />
+							<Route path="/wallet" element={<RequireRole role="BIDDER"><WalletPage /></RequireRole>} />
+							<Route path="/auctioneer" element={<RequireRole role="AUCTIONEER"><AuctioneerPage /></RequireRole>} />
+							<Route path="/activity" element={<RequireAuth><MyActivityPage /></RequireAuth>} />
 							<Route path="/audit/:lotId" element={<AuditPage />} />
 							<Route path="/receipt/:token" element={<ReceiptPage />} />
 							<Route path="/login" element={<LoginPage />} />
