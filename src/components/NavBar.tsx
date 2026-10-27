@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 
 export function NavBar() {
 	const user = useAuthStore((s) => s.user);

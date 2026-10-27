@@ -36,10 +36,13 @@ export function Sidebar() {
 		<aside className="fixed inset-y-0 left-0 w-64 bg-surface border-r border-border flex flex-col z-20">
 			<div className="px-6 py-5 border-b border-border">
 				<Link to="/" className="block">
-					<span className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">
+					<span className="text-[10px] font-semibold tracking-[0.2em] text-[#6B7280] uppercase">
 						Casa de
 					</span>
-					<p className="text-base font-bold text-foreground leading-tight">
+					<p
+						className="text-xl font-bold text-[#0D0D0D] leading-tight"
+						style={{ fontFamily: "var(--font-display)" }}
+					>
 						Leilões
 					</p>
 				</Link>

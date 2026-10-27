@@ -3,12 +3,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { lots, catalog } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import type { CatalogItem } from "@/lib/api";
 
 function stripHtml(html: string): string {
-	return html.replace(/<[^>]*>/g, " ").replace(/\s{2,}/g, " ").trim();
+	return html
+		.replace(/<[^>]*>/g, " ")
+		.replace(/\s{2,}/g, " ")
+		.trim();
 }
 
 const PROVIDERS = [
@@ -175,7 +178,7 @@ export function AuctioneerPage() {
 									key={p.key}
 									type="button"
 									size="sm"
-									variant={form.provider === p.key ? "default" : "outline"}
+									variant={form.provider === p.key ? "primary" : "outline"}
 									onClick={() => {
 										setForm((prev) => ({
 											...prev,

@@ -1,38 +1,51 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #f2f4f7;
-  --color-foreground: #0a0a0a;
-  --color-card: #ffffff;
-  --color-card-foreground: #0a0a0a;
-  --color-surface: #ffffff;
-  --color-ground: #f2f4f7;
-  --color-border: #e6e6e6;
-  --color-muted: #eef0f3;
-  --color-muted-foreground: #6b6b6b;
-  --color-primary: #141414;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #e6e6e6;
-  --color-secondary-foreground: #0a0a0a;
-  --color-destructive: #c0392b;
-  --color-destructive-foreground: #ffffff;
-  --color-accent: #1d5fbf;
-  --color-accent-foreground: #ffffff;
+  --font-sans: "Inter", "Geist", system-ui, sans-serif;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-mono: "Geist Mono", monospace;
+
+  /* Ground/surface */
+  --color-ground: #F5F4F0;
+  --color-surface: #FFFFFF;
+  --color-ink: #0D0D0D;
+  --color-muted: #6B7280;
+  --color-border: #E4E4E2;
+
+  /* Brand */
+  --color-primary: #0D0D0D;
+  --color-accent: #1D4ED8;
+  --color-live: #DC2626;
+  --color-positive: #16A34A;
+  --color-negative: #DC2626;
+
+  /* shadcn compat aliases */
+  --color-background: #F5F4F0;
+  --color-foreground: #0D0D0D;
+  --color-muted-foreground: #6B7280;
+  --color-card: #FFFFFF;
+  --color-destructive: #DC2626;
+  --color-destructive-foreground: #FFFFFF;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #E4E4E2;
+  --color-secondary-foreground: #0D0D0D;
+  --color-accent-foreground: #FFFFFF;
+  --color-card-foreground: #0D0D0D;
   --radius: 0.5rem;
-  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-serif: "Playfair Display", Georgia, serif;
 }
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-  border-color: var(--color-border);
+  border-color: #E4E4E2;
 }
 
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  font-family: "Geist", "Inter", system-ui, -apple-system, sans-serif;
+  background-color: #F5F4F0;
+  color: #0D0D0D;
+  font-family: "Inter", "Geist", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

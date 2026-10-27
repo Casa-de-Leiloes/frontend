@@ -3,8 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lots, bids, wallet } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import type { Bid } from "@/lib/api";
 
 function formatCents(cents: string | null | undefined): string {
@@ -71,13 +71,7 @@ function CountdownBox({
 	);
 }
 
-function SegmentedCountdown({
-	ms,
-	urgent,
-}: {
-	ms: number;
-	urgent: boolean;
-}) {
+function SegmentedCountdown({ ms, urgent }: { ms: number; urgent: boolean }) {
 	const { dias, hr, min, seg } = splitMs(ms);
 	return (
 		<div className="grid grid-cols-4 gap-1.5">
@@ -161,8 +155,7 @@ export function LotDetailPage() {
 	const { data: position } = useQuery({
 		queryKey: ["position", id],
 		queryFn: () => lots.getPosition(id!),
-		enabled:
-			!!id && !!user && user.role === "BIDDER" && lot?.status === "LIVE",
+		enabled: !!id && !!user && user.role === "BIDDER" && lot?.status === "LIVE",
 		refetchInterval: 10_000,
 	});
 

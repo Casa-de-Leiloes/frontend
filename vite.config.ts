@@ -10,6 +10,12 @@ export default defineConfig({
 		proxy: {
 			"/api": { target: "http://localhost:3000", changeOrigin: true },
 			"/health": { target: "http://localhost:3000", changeOrigin: true },
+			"/img-proxy": {
+				target: "https://www.artic.edu",
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/img-proxy/, ""),
+				secure: false,
+			},
 		},
 	},
 });

@@ -21,158 +21,148 @@ function formatCents(cents: string | null): string {
 	}).format(Number(cents) / 100);
 }
 
-function formatDiff(endsAt: string): string {
+function formatTimeLeft(endsAt: string): { text: string; urgent: boolean } {
 	const diff = Math.max(0, new Date(endsAt).getTime() - Date.now());
-	if (diff === 0) return "Encerrado";
-	const h = Math.floor(diff / 3_600_000);
-	const m = Math.floor((diff % 3_600_000) / 60_000);
-	const s = Math.floor((diff % 60_000) / 1_000);
-	if (h >= 24) {
-		return new Date(endsAt).toLocaleDateString("pt-BR", {
-			day: "2-digit",
-			month: "2-digit",
-		});
-	}
-	return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+	if (diff === 0) return { text: "Encerrado", urgent: false };
+	const days = Math.floor(diff / 86_400_000);
+	const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+	const mins = Math.floor((diff % 3_600_000) / 60_000);
+	const secs = Math.floor((diff % 60_000) / 1_000);
+	if (days >= 2) return { text: `Faltam ${days} dias`, urgent: false };
+	if (days === 1) return { text: "Falta 1 dia", urgent: false };
+	if (hours >= 1) return { text: `Faltam ${hours}h ${mins}min`, urgent: false };
+	if (mins >= 1) return { text: `Faltam ${mins}min`, urgent: true };
+	return {
+		text: `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`,
+		urgent: true,
+	};
 }
 
-function useCountdown(endsAt: string): string {
-	const [display, setDisplay] = useState(() => formatDiff(endsAt));
+function useTimeLeft(endsAt: string): { text: string; urgent: boolean } {
+	const [val, setVal] = useState(() => formatTimeLeft(endsAt));
 	useEffect(() => {
-		setDisplay(formatDiff(endsAt));
-		const id = setInterval(() => setDisplay(formatDiff(endsAt)), 1_000);
+		setVal(formatTimeLeft(endsAt));
+		const id = setInterval(() => setVal(formatTimeLeft(endsAt)), 1_000);
 		return () => clearInterval(id);
 	}, [endsAt]);
-	return display;
+	return val;
 }
 
-function LiveDot() {
+function proxyIfNeeded(url: string): string {
+	if (url.includes("artic.edu")) {
+		try {
+			return `/img-proxy${new URL(url).pathname}`;
+		} catch {
+			return url;
+		}
+	}
+	return url;
+}
+
+function LotImage({ src, alt }: { src: string | null; alt: string }) {
+	const [failed, setFailed] = useState(false);
+	if (!src || failed) {
+		return (
+			<div className="w-full h-full bg-[#F5F4F0] flex items-center justify-center p-4">
+				<span className="text-[#9CA3AF] text-xs text-center line-clamp-3">
+					{alt}
+				</span>
+			</div>
+		);
+	}
 	return (
-		<span
-			className="inline-block w-1.5 h-1.5 rounded-full mr-1 animate-pulse"
-			style={{ background: "#fff" }}
+		<img
+			src={proxyIfNeeded(src)}
+			alt={alt}
+			crossOrigin="anonymous"
+			referrerPolicy="no-referrer"
+			onError={() => setFailed(true)}
+			className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+			loading="lazy"
 		/>
 	);
 }
 
-function StatusBadge({ status }: { status: string }) {
-	const base = "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold";
-	if (status === "LIVE")
-		return (
-			<span className={base} style={{ background: "#1d5fbf", color: "#fff" }}>
-				<LiveDot />
-				AO VIVO
-			</span>
-		);
-	if (status === "SCHEDULED")
-		return (
-			<span className={base} style={{ background: "#e9e9e9", color: "#6b6b6b" }}>
-				AGENDADO
-			</span>
-		);
-	if (status === "CLOSED")
-		return (
-			<span className={base} style={{ background: "#f0f0f0", color: "#6b6b6b" }}>
-				ENCERRADO
-			</span>
-		);
-	if (status === "CANCELLED")
-		return (
-			<span className={base} style={{ background: "#ffedea", color: "#831c1e" }}>
-				CANCELADO
-			</span>
-		);
+function LiveBadge() {
 	return (
-		<span className={base} style={{ background: "#e9e9e9", color: "#6b6b6b" }}>
-			{status}
+		<span className="inline-flex items-center gap-1 bg-[#DC2626] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+			<span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+			AO VIVO
 		</span>
 	);
 }
 
 function LotCard({ lot }: { lot: Lot }) {
-	const countdown = useCountdown(lot.endsAt);
+	const timeLeft = useTimeLeft(lot.endsAt);
 	const bidCents = lot.currentBidCents ?? lot.startingBidCents;
+	const isLive = lot.status === "LIVE";
 
 	return (
 		<Link to={`/lots/${lot.id}`} className="group block">
-			<div
-				className="bg-white border rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-				style={{ borderColor: "#e6e6e6" }}
-			>
-				{/* Image */}
-				<div
-					className="relative w-full bg-[#f0f0f0]"
-					style={{ aspectRatio: "4/3" }}
-				>
-					{lot.imageUrl ? (
-						<img
-							src={lot.imageUrl}
-							alt={lot.title}
-							className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-							loading="lazy"
-						/>
-					) : (
-						<div className="w-full h-full flex items-center justify-center">
-							<svg
-								width="40"
-								height="40"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="#d1d5db"
-								strokeWidth="1"
-							>
-								<rect x="3" y="3" width="18" height="18" rx="2" />
-								<circle cx="8.5" cy="8.5" r="1.5" />
-								<path d="m21 15-5-5L5 21" />
-							</svg>
+			<div className="bg-white rounded-xl border border-[#E4E4E2] overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
+				{/* Image 1:1 */}
+				<div className="relative w-full" style={{ aspectRatio: "1/1" }}>
+					<div className="absolute inset-0">
+						<LotImage src={lot.imageUrl} alt={lot.title} />
+					</div>
+					{isLive && (
+						<div className="absolute top-2 left-2 z-10">
+							<LiveBadge />
 						</div>
 					)}
-					{/* Status badge overlay */}
-					<div className="absolute top-2 left-2">
-						<StatusBadge status={lot.status} />
-					</div>
-					{/* Bid count pill */}
+					{lot.status === "CLOSED" && (
+						<div className="absolute inset-0 bg-black/20 flex items-end justify-start p-2">
+							<span className="text-[10px] font-medium text-white bg-black/60 px-2 py-0.5 rounded-full">
+								Encerrado
+							</span>
+						</div>
+					)}
+					{lot.status === "SCHEDULED" && (
+						<div className="absolute top-2 left-2 z-10">
+							<span className="text-[10px] font-semibold text-[#0D0D0D] bg-white/90 px-2 py-0.5 rounded-full">
+								Agendado
+							</span>
+						</div>
+					)}
 					{lot.bidCount > 0 && (
-						<div className="absolute bottom-2 right-2">
-							<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/50 text-white backdrop-blur-sm">
+						<div className="absolute bottom-2 right-2 z-10">
+							<span className="text-[10px] font-medium text-white bg-black/60 px-2 py-0.5 rounded-full">
 								{lot.bidCount} {lot.bidCount === 1 ? "lance" : "lances"}
 							</span>
 						</div>
 					)}
 				</div>
 
-				{/* Body */}
-				<div className="p-4">
-					<p className="text-[10px] text-[#9ca3af] mb-1 uppercase tracking-widest">
+				{/* Card body */}
+				<div className="p-3">
+					<p className="text-[11px] text-[#6B7280] mb-1 truncate">
 						{lot.category.replace(/_/g, " ")}
 					</p>
-					<h2 className="text-sm font-semibold text-[#0a0a0a] line-clamp-2 mb-3 leading-snug group-hover:text-[#1d5fbf] transition-colors">
+					<h2
+						className="text-[15px] font-semibold leading-snug line-clamp-2 mb-3 text-[#0D0D0D]"
+						style={{ fontFamily: "var(--font-display)" }}
+					>
 						{lot.title}
 					</h2>
 
-					<div
-						className="border-t pt-3 flex items-end justify-between gap-2"
-						style={{ borderColor: "#f0f0f0" }}
-					>
+					<div className="border-t border-[#F0F0EE] pt-2.5 space-y-1.5">
 						<div>
-							<p className="text-[10px] text-[#9ca3af] uppercase tracking-widest mb-0.5">
-								Lance atual
+							<p className="text-[9px] text-[#9CA3AF] tracking-wider uppercase mb-0.5">
+								Licitação atual
 							</p>
 							<p
-								className="text-2xl font-bold tabular-nums leading-none"
-								style={{ color: "#1d5fbf" }}
+								className="text-[19px] font-bold tabular-nums leading-none"
+								style={{ color: "#1D4ED8" }}
 							>
 								{formatCents(bidCents)}
 							</p>
 						</div>
-						<div className="text-right shrink-0">
-							<p className="text-[10px] text-[#9ca3af] uppercase tracking-widest mb-0.5">
-								{lot.status === "LIVE" ? "Encerra em" : "Encerra"}
-							</p>
-							<p className="text-sm font-mono font-medium text-[#0a0a0a] tabular-nums">
-								{countdown}
-							</p>
-						</div>
+						<p
+							className="text-xs font-medium"
+							style={{ color: timeLeft.urgent ? "#DC2626" : "#6B7280" }}
+						>
+							{timeLeft.text}
+						</p>
 					</div>
 				</div>
 			</div>
@@ -190,84 +180,72 @@ export function LotsPage() {
 	});
 
 	const allLots = data?.items.filter((l) => l.status !== "CANCELLED") ?? [];
-
 	const filtered =
 		filter === "ALL" ? allLots : allLots.filter((l) => l.status === filter);
-
-	const liveCnt = allLots.filter((l) => l.status === "LIVE").length;
 
 	return (
 		<div className="max-w-7xl">
 			{/* Header */}
-			<div className="mb-6 flex items-baseline gap-3">
-				<h1 className="text-xl font-bold text-[#0a0a0a]">Leilões</h1>
-				{liveCnt > 0 && (
-					<span
-						className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold"
-						style={{ background: "#1d5fbf", color: "#fff" }}
-					>
-						<LiveDot />
-						{liveCnt} ao vivo
-					</span>
-				)}
-			</div>
+			<div className="mb-5">
+				<h1
+					className="text-3xl font-bold text-[#0D0D0D] mb-4"
+					style={{ fontFamily: "var(--font-display)" }}
+				>
+					Leilões
+				</h1>
 
-			{/* Filter tabs */}
-			<div
-				className="flex items-center gap-1 mb-6 border-b"
-				style={{ borderColor: "#e6e6e6" }}
-			>
-				{FILTERS.map((f) => {
-					const cnt =
-						f.value === "ALL"
-							? allLots.length
-							: allLots.filter((l) => l.status === f.value).length;
-					const active = filter === f.value;
-					return (
-						<button
-							key={f.value}
-							type="button"
-							onClick={() => setFilter(f.value)}
-							className="px-3 pb-2.5 text-sm font-medium transition-colors border-b-2 -mb-px"
-							style={{
-								borderBottomColor: active ? "#141414" : "transparent",
-								color: active ? "#0a0a0a" : "#6b6b6b",
-							}}
-						>
-							{f.label}
-							<span
-								className="ml-1.5 text-xs tabular-nums"
-								style={{ color: active ? "#6b6b6b" : "#9ca3af" }}
+				{/* Filter chips */}
+				<div className="flex items-center gap-2 flex-wrap">
+					{FILTERS.map((f) => {
+						const cnt =
+							f.value === "ALL"
+								? allLots.length
+								: allLots.filter((l) => l.status === f.value).length;
+						const active = filter === f.value;
+						return (
+							<button
+								key={f.value}
+								type="button"
+								onClick={() => setFilter(f.value)}
+								className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+								style={{
+									background: active ? "#0D0D0D" : "#FFFFFF",
+									color: active ? "#FFFFFF" : "#6B7280",
+									border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
+								}}
 							>
-								{cnt}
-							</span>
-						</button>
-					);
-				})}
+								{f.value === "LIVE" && (
+									<span
+										className="w-1.5 h-1.5 rounded-full"
+										style={{ background: active ? "#fff" : "#DC2626" }}
+									/>
+								)}
+								{f.label}
+								<span className="text-xs tabular-nums opacity-60">{cnt}</span>
+							</button>
+						);
+					})}
+				</div>
 			</div>
 
-			{/* Loading */}
 			{isLoading && (
-				<div className="flex items-center justify-center h-64 text-sm text-[#6b6b6b]">
+				<div className="flex items-center justify-center h-64 text-sm text-[#6B7280]">
 					Carregando lotes…
 				</div>
 			)}
 
-			{/* Error */}
 			{error && (
-				<div className="flex items-center justify-center h-64 text-sm text-[#c4242a]">
+				<div className="flex items-center justify-center h-64 text-sm text-[#DC2626]">
 					Falha ao carregar lotes.
 				</div>
 			)}
 
-			{/* Empty */}
 			{!isLoading && !error && filtered.length === 0 && (
-				<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6b6b6b]">
+				<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6B7280]">
 					Nenhum lote nesta categoria.
 				</div>
 			)}
 
-			{/* Grid */}
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 				{filtered.map((lot) => (
 					<LotCard key={lot.id} lot={lot} />

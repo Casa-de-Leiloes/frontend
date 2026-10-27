@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 export function LoginPage() {
 	const navigate = useNavigate();
