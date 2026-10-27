@@ -104,7 +104,12 @@ export function TopNav() {
 		navigate("/login");
 	}
 
-	const activeCat = location.pathname === "/" && !location.search ? CATEGORIES[0] : null;
+	const activeCatHref = location.pathname === "/" && location.search
+		? `/?${location.search.replace(/^\?/, "")}`
+		: location.pathname === "/"
+			? "/"
+			: null;
+	const activeCat = CATEGORIES.find((c) => c.href === (activeCatHref ?? "/")) ?? CATEGORIES[0];
 
 	return (
 		<header className="fixed top-0 inset-x-0 z-30 bg-white" style={{ borderBottom: "1px solid #E4E4E2" }}>
@@ -199,7 +204,7 @@ export function TopNav() {
 			<div className="max-w-7xl mx-auto px-6 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
 				<div className="flex items-stretch gap-1">
 					{CATEGORIES.map((cat) => {
-						const isActive = activeCat?.label === cat.label;
+						const isActive = activeCat.label === cat.label;
 						return (
 							<Link
 								key={cat.label}
