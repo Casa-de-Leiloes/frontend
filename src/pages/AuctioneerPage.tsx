@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { lots, catalog } from "@/lib/api";
+import { lots, catalog, imgProxy } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { translateError } from "@/lib/errors";
 import { Button } from "@/components/ui/Button";
@@ -30,27 +30,29 @@ function formatCents(cents: string | null | undefined): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
-	const base =
-		"inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold";
 	if (status === "LIVE")
 		return (
-			<span className={`${base} bg-[#1d5fbf] text-white`}>
-				<span className="mr-1 inline-block w-1.5 h-1.5 rounded-full bg-white opacity-90" />
-				AO VIVO
+			<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#DC2626] text-white">
+				<span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+				Ao vivo
 			</span>
 		);
 	if (status === "SCHEDULED")
 		return (
-			<span className={`${base} bg-muted text-muted-foreground`}>AGENDADO</span>
+			<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+				Agendado
+			</span>
 		);
 	if (status === "CANCELLED")
 		return (
-			<span className={`${base} bg-destructive/10 text-destructive`}>
-				CANCELADO
+			<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]">
+				Cancelado
 			</span>
 		);
 	return (
-		<span className={`${base} bg-muted text-muted-foreground`}>ENCERRADO</span>
+		<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB]">
+			Encerrado
+		</span>
 	);
 }
 
@@ -397,53 +399,78 @@ export function AuctioneerPage() {
 
 			{/* My lots */}
 			<div>
-				<h2 className="text-sm font-semibold text-foreground mb-3">
-					Meus lotes{" "}
-					<span className="text-muted-foreground font-normal">
-						({myLots.length})
-					</span>
-				</h2>
-				{myLots.length === 0 && (
-					<p className="text-sm text-muted-foreground">
-						Nenhum lote criado ainda.
-					</p>
-				)}
-				<div className="space-y-3">
-					{myLots.map((lot) => (
-						<div
-							key={lot.id}
-							className="bg-surface flex items-center justify-between border border-border rounded-lg px-4 py-3 gap-4"
-						>
-							<div className="flex-1 min-w-0">
-								<Link
-									to={`/lots/${lot.id}`}
-									className="text-sm font-medium hover:underline line-clamp-1 text-foreground"
-								>
-									{lot.title}
-								</Link>
-								<p className="text-xs text-muted-foreground mt-0.5 font-mono tabular-nums">
-									{lot.bidCount} lance(s) ·{" "}
-									{formatCents(lot.currentBidCents ?? lot.startingBidCents)}
-								</p>
-							</div>
-							<StatusBadge status={lot.status} />
-							{(lot.status === "SCHEDULED" || lot.status === "LIVE") && (
-								<Button
-									size="sm"
-									variant="destructive"
-									onClick={() => {
-										if (confirm(`Cancelar lote "${lot.title}"?`)) {
-											cancelMutation.mutate(lot.id);
-										}
-									}}
-									disabled={cancelMutation.isPending}
-								>
-									Cancelar
-								</Button>
-							)}
-						</div>
-					))}
+				<div className="flex items-center justify-between mb-4">
+					<h2 className="text-sm font-semibold text-[#0D0D0D]">
+						Meus lotes
+						<span className="ml-2 text-xs font-normal text-[#9CA3AF]">
+							{myLots.length} {myLots.length === 1 ? "item" : "itens"}
+						</span>
+					</h2>
 				</div>
+
+				{myLots.length === 0 ? (
+					<div className="bg-white border border-[#E4E4E2] rounded-xl px-6 py-12 text-center">
+						<p className="text-sm text-[#9CA3AF]">Nenhum lote criado ainda.</p>
+					</div>
+				) : (
+					<div className="bg-white border border-[#E4E4E2] rounded-xl overflow-hidden divide-y divide-[#F3F4F6]">
+						{myLots.map((lot) => {
+							const proxyUrl = imgProxy(lot.imageUrl);
+							return (
+								<div key={lot.id} className="flex items-center gap-4 px-4 py-3 hover:bg-[#FAFAFA] transition-colors">
+									{/* Thumbnail */}
+									<div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-[#F5F4F0]">
+										{proxyUrl ? (
+											<img src={proxyUrl} alt={lot.title} className="w-full h-full object-cover" />
+										) : (
+											<div className="w-full h-full flex items-center justify-center">
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.5">
+													<rect x="3" y="3" width="18" height="18" rx="2"/>
+													<circle cx="8.5" cy="8.5" r="1.5"/>
+													<path d="m21 15-5-5L5 21"/>
+												</svg>
+											</div>
+										)}
+									</div>
+
+									{/* Info */}
+									<div className="flex-1 min-w-0">
+										<Link
+											to={`/lots/${lot.id}`}
+											className="text-sm font-medium text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors line-clamp-1"
+										>
+											{lot.title}
+										</Link>
+										<div className="flex items-center gap-2 mt-0.5">
+											<span className="text-xs text-[#9CA3AF] tabular-nums">
+												{lot.bidCount} lance{lot.bidCount !== 1 ? "s" : ""} · {formatCents(lot.currentBidCents ?? lot.startingBidCents)}
+											</span>
+										</div>
+									</div>
+
+									{/* Status + action */}
+									<div className="flex items-center gap-2 flex-shrink-0">
+										<StatusBadge status={lot.status} />
+										{(lot.status === "SCHEDULED" || lot.status === "LIVE") && (
+											<button
+												type="button"
+												onClick={() => {
+													if (confirm(`Cancelar lote "${lot.title}"?`)) {
+														cancelMutation.mutate(lot.id);
+													}
+												}}
+												disabled={cancelMutation.isPending}
+												className="text-xs text-[#DC2626] hover:text-white hover:bg-[#DC2626] border border-[#FECACA] px-2 py-0.5 rounded-full transition-colors disabled:opacity-50"
+											>
+												Cancelar
+											</button>
+										)}
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				)}
 			</div>
 		</div>
 	);

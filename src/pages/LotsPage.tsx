@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { lots } from "@/lib/api";
+import { lots, imgProxy } from "@/lib/api";
 import type { Lot } from "@/lib/api";
 
 type StatusFilter = "ALL" | "LIVE" | "SCHEDULED" | "CLOSED";
@@ -88,7 +88,8 @@ function useTimeLeft(endsAt: string): { text: string; urgent: boolean } {
 
 function LotImage({ src, alt }: { src: string | null; alt: string }) {
 	const [failed, setFailed] = useState(false);
-	if (!src || failed) {
+	const proxied = imgProxy(src);
+	if (!proxied || failed) {
 		return (
 			<div className="w-full h-full bg-[#F5F4F0] flex items-center justify-center p-4">
 				<span className="text-[#9CA3AF] text-xs text-center line-clamp-3">
@@ -99,7 +100,7 @@ function LotImage({ src, alt }: { src: string | null; alt: string }) {
 	}
 	return (
 		<img
-			src={src}
+			src={proxied}
 			alt={alt}
 			onError={() => setFailed(true)}
 			className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -204,7 +205,7 @@ function HeroLot({ lot }: { lot: Lot }) {
 				{/* Background image */}
 				{lot.imageUrl && (
 					<img
-						src={lot.imageUrl}
+						src={imgProxy(lot.imageUrl) ?? lot.imageUrl}
 						alt={lot.title}
 						className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-50 transition-opacity duration-500"
 					/>

@@ -1,5 +1,10 @@
 const BASE = "/api";
 
+export function imgProxy(url: string | null | undefined): string | null {
+	if (!url) return null;
+	return `${BASE}/img-proxy?url=${encodeURIComponent(url)}`;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
 	const res = await fetch(`${BASE}${path}`, {
 		credentials: "include",

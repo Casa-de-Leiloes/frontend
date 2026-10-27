@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { lots, bids, wallet } from "@/lib/api";
+import { lots, bids, wallet, imgProxy } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -93,12 +93,13 @@ function LotGallery({
 	const allImages = [mainImage, ...additionalImages].filter((u): u is string => Boolean(u));
 	const [activeIdx, setActiveIdx] = useState(0);
 	const active = allImages[activeIdx] ?? null;
+	const proxied = imgProxy(active);
 
 	return (
 		<div className="space-y-2">
 			<div className="rounded-xl overflow-hidden bg-[#F5F4F0]" style={{ aspectRatio: "4/3" }}>
-				{active ? (
-					<img src={active} alt={title} className="w-full h-full object-contain" />
+				{proxied ? (
+					<img src={proxied} alt={title} className="w-full h-full object-contain" />
 				) : (
 					<div className="w-full h-full flex items-center justify-center">
 						<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1">
@@ -119,7 +120,7 @@ function LotGallery({
 							className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors"
 							style={{ borderColor: i === activeIdx ? "#1D4ED8" : "transparent" }}
 						>
-							<img src={url} alt={`${title} ${i + 1}`} className="w-full h-full object-cover" />
+							<img src={imgProxy(url) ?? url} alt={`${title} ${i + 1}`} className="w-full h-full object-cover" />
 						</button>
 					))}
 				</div>
