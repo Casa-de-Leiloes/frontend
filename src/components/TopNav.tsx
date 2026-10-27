@@ -178,18 +178,6 @@ export function TopNav() {
 			{/* Trust bar */}
 			<div className="bg-[#F9FAFB] border-t border-b border-[#E4E4E2] py-1.5">
 				<div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-6 text-xs text-[#6B7280]">
-					<span className="flex items-center gap-1.5">
-						<span className="font-semibold text-[#0D0D0D]">Excelente</span>
-						<span className="flex gap-0.5">
-							{[1,2,3,4,5].map(i => (
-								<svg key={i} width="12" height="12" viewBox="0 0 12 12" fill={i <= 4 ? "#00B67A" : "none"}>
-									<polygon points="6 1 7.5 4.5 11 4.8 8.5 7 9.2 10.5 6 8.8 2.8 10.5 3.5 7 1 4.8 4.5 4.5" stroke="#00B67A" strokeWidth="0.5"/>
-								</svg>
-							))}
-						</span>
-						<span className="text-[#00B67A] font-medium">Trustpilot</span>
-					</span>
-					<span className="text-[#E4E4E2]">·</span>
 					<span className="flex items-center gap-1">
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
 							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
