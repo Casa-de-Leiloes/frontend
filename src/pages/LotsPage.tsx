@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { lots, imgProxy } from "@/lib/api";
@@ -270,9 +270,17 @@ function SectionRow({
 	icon: ReactNode;
 	lots: Lot[];
 }) {
+	const scrollRef = useRef<HTMLDivElement>(null);
+
+	function scroll(dir: "left" | "right") {
+		const el = scrollRef.current;
+		if (!el) return;
+		el.scrollBy({ left: dir === "right" ? 284 : -284, behavior: "smooth" });
+	}
+
 	if (sectionLots.length === 0) return null;
 	return (
-		<section className="mb-10">
+		<section className="mb-10 group/row">
 			<div className="flex items-center justify-between mb-4">
 				<h2 className="flex items-center gap-2 text-lg font-bold text-[#0D0D0D]">
 					{icon}
@@ -280,15 +288,50 @@ function SectionRow({
 					<span className="text-sm font-normal text-[#9CA3AF]">({sectionLots.length})</span>
 				</h2>
 			</div>
-			<div
-				className="flex gap-4 overflow-x-auto pb-2"
-				style={{ scrollbarWidth: "none" }}
-			>
-				{sectionLots.map((lot) => (
-					<div key={lot.id} className="flex-none w-64">
-						<LotCard lot={lot} />
-					</div>
-				))}
+			<div className="relative">
+				{/* Left arrow */}
+				<button
+					type="button"
+					onClick={() => scroll("left")}
+					aria-label="Anterior"
+					className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10
+						w-9 h-9 rounded-full bg-white border border-[#E4E4E2] shadow-md
+						flex items-center justify-center
+						opacity-0 group-hover/row:opacity-100 transition-opacity duration-200
+						hover:bg-[#F3F4F6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+				>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D0D0D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+						<path d="M15 18l-6-6 6-6"/>
+					</svg>
+				</button>
+
+				{/* Right arrow */}
+				<button
+					type="button"
+					onClick={() => scroll("right")}
+					aria-label="Próximo"
+					className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10
+						w-9 h-9 rounded-full bg-white border border-[#E4E4E2] shadow-md
+						flex items-center justify-center
+						opacity-0 group-hover/row:opacity-100 transition-opacity duration-200
+						hover:bg-[#F3F4F6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+				>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D0D0D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+						<path d="M9 18l6-6-6-6"/>
+					</svg>
+				</button>
+
+				<div
+					ref={scrollRef}
+					className="flex gap-4 overflow-x-auto pb-2"
+					style={{ scrollbarWidth: "none" }}
+				>
+					{sectionLots.map((lot) => (
+						<div key={lot.id} className="flex-none w-64">
+							<LotCard lot={lot} />
+						</div>
+					))}
+				</div>
 			</div>
 		</section>
 	);
