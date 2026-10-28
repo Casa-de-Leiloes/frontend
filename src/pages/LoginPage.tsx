@@ -100,6 +100,38 @@ export function LoginPage() {
 					</Link>
 				</p>
 			</div>
+
+			{/* Demo credentials card */}
+			<div
+				className="w-full max-w-sm mt-4 rounded-xl border p-4 space-y-2"
+				style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+			>
+				<p className="text-xs font-medium text-center" style={{ color: "var(--ink-subtle)" }}>
+					Acesso rápido — contas de demonstração
+				</p>
+				{(
+					[
+						{ label: "Leiloeiro", email: "auctioneer@demo.com", password: "Password123!" },
+						{ label: "Licitante 1", email: "bidder1@demo.com", password: "Password123!" },
+						{ label: "Licitante 2", email: "bidder2@demo.com", password: "Password123!" },
+					] as const
+				).map(({ label, email: e, password: p }) => (
+					<button
+						key={e}
+						type="button"
+						onClick={() => { setEmail(e); setPassword(p); }}
+						className="w-full text-left text-xs px-3 py-2 rounded-lg transition-colors"
+						style={{
+							background: "var(--ground)",
+							color: "var(--ink)",
+							border: "1px solid var(--border)",
+						}}
+					>
+						<span className="font-medium">{label}</span>
+						<span className="ml-2 opacity-60">{e}</span>
+					</button>
+				))}
+			</div>
 		</div>
 	);
 }
