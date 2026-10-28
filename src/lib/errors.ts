@@ -5,6 +5,7 @@ const ERROR_MAP: Record<string, string> = {
 
   // Bids
   LOT_NOT_LIVE: "Este leilão não está em andamento.",
+  LOT_NOT_STARTED: "Este leilão ainda não foi iniciado.",
   BID_TOO_LOW: "Lance inferior ao valor mínimo permitido.",
   ALREADY_LEADING: "Você já está dando o maior lance.",
   INSUFFICIENT_FUNDS: "Saldo insuficiente na carteira.",
