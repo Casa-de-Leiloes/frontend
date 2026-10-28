@@ -136,10 +136,12 @@ export function TopNav() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+	const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [hidden, setHidden] = useState(false);
 	const headerRef = useRef<HTMLElement>(null);
 	const catBtnRef = useRef<HTMLButtonElement>(null);
+	const userBtnRef = useRef<HTMLButtonElement>(null);
 	const lastScrollY = useRef(0);
 
 	// Hide on scroll down, reveal on scroll up
@@ -174,7 +176,20 @@ export function TopNav() {
 	useEffect(() => {
 		setMobileMenuOpen(false);
 		setCatDropdownOpen(false);
+		setUserDropdownOpen(false);
 	}, [location.pathname, location.search]);
+
+	// Close user dropdown on outside click
+	useEffect(() => {
+		if (!userDropdownOpen) return;
+		function onClickOutside(e: MouseEvent) {
+			if (userBtnRef.current && !userBtnRef.current.closest("[data-user-dropdown]")?.contains(e.target as Node)) {
+				setUserDropdownOpen(false);
+			}
+		}
+		document.addEventListener("mousedown", onClickOutside);
+		return () => document.removeEventListener("mousedown", onClickOutside);
+	}, [userDropdownOpen]);
 
 	// Close cat dropdown on outside click
 	useEffect(() => {
@@ -194,6 +209,9 @@ export function TopNav() {
 		navigate("/login");
 	}
 
+	const INTERNAL_ROUTES = ["/profile", "/wallet", "/activity", "/bidder", "/auctioneer", "/receipt"];
+	const isInternal = INTERNAL_ROUTES.some((r) => location.pathname === r || location.pathname.startsWith(`${r}/`));
+
 	const activeCatHref = location.pathname === "/" && location.search
 		? `/?${location.search.replace(/^\?/, "")}`
 		: location.pathname === "/"
@@ -205,11 +223,10 @@ export function TopNav() {
 		<>
 		<header
 			ref={headerRef}
-			className="fixed top-0 inset-x-0 z-30 transition-transform duration-300"
+			className="fixed top-0 inset-x-0 z-30"
 			style={{
 				background: "var(--surface)",
 				borderBottom: "1px solid var(--border)",
-				transform: hidden ? "translateY(-100%)" : "translateY(0)",
 			}}
 		>
 			{/* Main bar */}
@@ -287,31 +304,68 @@ export function TopNav() {
 						<ThemeToggle />
 					</div>
 					{user ? (
-						<>
-							{user.role === "BIDDER" && (
-								<div className="hidden md:flex items-center gap-3">
-									<Link to="/bidder" className="text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Painel</Link>
-									<Link to="/wallet" className="text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Carteira</Link>
-									<Link to="/activity" className="text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Atividade</Link>
+						<div className="relative hidden sm:block" data-user-dropdown="">
+							<button
+								ref={userBtnRef}
+								type="button"
+								onClick={() => setUserDropdownOpen((v) => !v)}
+								className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+								style={{
+									color: "var(--ink)",
+									background: userDropdownOpen ? "var(--subtle-bg2)" : "transparent",
+								}}
+							>
+								<span className="max-w-[100px] truncate">{user.name}</span>
+								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden
+									style={{ transition: "transform 0.2s", transform: userDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+									<path d="M6 9l6 6 6-6"/>
+								</svg>
+							</button>
+
+							{userDropdownOpen && (
+								<div
+									className="absolute top-full right-0 mt-2 w-48 rounded-xl shadow-2xl py-1 z-50"
+									style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+								>
+									<Link to="/profile" className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-[var(--subtle-bg)]" style={{ color: "var(--ink)" }}>
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+										Perfil
+									</Link>
+									{user.role === "BIDDER" && (
+										<>
+											<Link to="/bidder" className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-[var(--subtle-bg)]" style={{ color: "var(--ink)" }}>
+												<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+												Painel
+											</Link>
+											<Link to="/wallet" className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-[var(--subtle-bg)]" style={{ color: "var(--ink)" }}>
+												<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h.01"/></svg>
+												Carteira
+											</Link>
+											<Link to="/activity" className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-[var(--subtle-bg)]" style={{ color: "var(--ink)" }}>
+												<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+												Atividade
+											</Link>
+										</>
+									)}
+									{user.role === "AUCTIONEER" && (
+										<Link to="/auctioneer" className="flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-[var(--subtle-bg)]" style={{ color: "var(--ink)" }}>
+											<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+											Painel
+										</Link>
+									)}
+									<div className="my-1" style={{ borderTop: "1px solid var(--border)" }} />
+									<button
+										type="button"
+										onClick={handleSignOut}
+										className="w-full flex items-center gap-2 px-4 py-2.5 text-sm transition-colors hover:bg-[var(--subtle-bg)]"
+										style={{ color: "var(--live)" }}
+									>
+										<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+										Sair
+									</button>
 								</div>
 							)}
-							{user.role === "AUCTIONEER" && (
-								<Link to="/auctioneer" className="hidden md:inline text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Painel</Link>
-							)}
-							<div className="hidden sm:flex items-center gap-2 border-l pl-3" style={{ borderColor: "var(--border)" }}>
-								<span className="text-sm font-medium max-w-[80px] truncate" style={{ color: "var(--ink)" }}>
-									{user.name}
-								</span>
-								<button
-									type="button"
-									onClick={handleSignOut}
-									className="text-sm transition-colors"
-									style={{ color: "var(--ink-muted)" }}
-								>
-									Sair
-								</button>
-							</div>
-						</>
+						</div>
 					) : (
 						<div className="hidden sm:flex items-center gap-2">
 							<Link to="/login" className="text-sm font-medium transition-colors" style={{ color: "var(--ink)" }}>
@@ -360,51 +414,6 @@ export function TopNav() {
 				</div>
 			</div>
 
-			{/* Trust bar — hidden on mobile */}
-			<div className="hidden sm:block py-1.5" style={{ background: "var(--subtle-bg)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-				<div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-6 text-xs" style={{ color: "var(--ink-muted)" }}>
-					<span className="flex items-center gap-1">
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--positive)" strokeWidth="2">
-							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-						</svg>
-						Lances auditáveis com hash chain
-					</span>
-					<span style={{ color: "var(--border)" }}>·</span>
-					<span className="flex items-center gap-1">
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2">
-							<rect x="3" y="11" width="18" height="11" rx="2"/>
-							<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-						</svg>
-						Dados protegidos pela LGPD
-					</span>
-				</div>
-			</div>
-
-			{/* Category tabs */}
-			<div className="max-w-7xl mx-auto px-6 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-				<div className="flex items-stretch gap-1">
-					{CATEGORIES.map((cat) => {
-						const isActive = activeCat.label === cat.label;
-						return (
-							<Link
-								key={cat.label}
-								to={cat.href}
-								className="flex flex-col items-center gap-1 px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors flex-shrink-0 border-b-2"
-								style={{
-									color: isActive ? "var(--accent)" : "var(--ink-muted)",
-									borderBottomColor: isActive ? "var(--accent)" : "transparent",
-								}}
-							>
-								<span style={{ color: isActive ? "var(--accent)" : "var(--ink-subtle)" }}>
-									{cat.icon}
-								</span>
-								{cat.label}
-							</Link>
-						);
-					})}
-				</div>
-			</div>
-
 			{/* Mobile dropdown menu */}
 			{mobileMenuOpen && (
 				<div
@@ -439,6 +448,10 @@ export function TopNav() {
 									Minha conta — {user.name}
 								</p>
 								<div className="flex flex-col gap-1">
+									<Link to="/profile" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "var(--ink)", background: "var(--subtle-bg)" }}>
+										<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+										Perfil
+									</Link>
 									{user.role === "BIDDER" && (
 										<>
 											<Link to="/bidder" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "var(--ink)", background: "var(--subtle-bg)" }}>
@@ -502,7 +515,56 @@ export function TopNav() {
 		</header>
 
 		{/* Spacer to push content below fixed header */}
-		<div style={{ height: "var(--header-h, 152px)" }} aria-hidden />
+		<div style={{ height: "var(--header-h, 56px)" }} aria-hidden />
+
+		{/* Trust bar — normal flow, scrolls away */}
+		{!isInternal && (
+			<div className="hidden sm:block" style={{ background: "var(--subtle-bg)", borderBottom: "1px solid var(--border)", padding: "6px 0" }}>
+				<div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-6 text-xs" style={{ color: "var(--ink-muted)" }}>
+					<span className="flex items-center gap-1">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--positive)" strokeWidth="2">
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+						</svg>
+						Lances auditáveis com hash chain
+					</span>
+					<span style={{ color: "var(--border)" }}>·</span>
+					<span className="flex items-center gap-1">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2">
+							<rect x="3" y="11" width="18" height="11" rx="2"/>
+							<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+						</svg>
+						Dados protegidos pela LGPD
+					</span>
+				</div>
+			</div>
+		)}
+
+		{/* Category tabs — normal flow, scrolls away */}
+		{!isInternal && (
+			<div className="overflow-x-auto" style={{ scrollbarWidth: "none", background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+				<div className="flex items-stretch gap-1 justify-center min-w-max mx-auto px-4">
+					{CATEGORIES.map((cat) => {
+						const isActive = activeCat.label === cat.label;
+						return (
+							<Link
+								key={cat.label}
+								to={cat.href}
+								className="flex flex-col items-center gap-1 px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors flex-shrink-0 border-b-2"
+								style={{
+									color: isActive ? "var(--accent)" : "var(--ink-muted)",
+									borderBottomColor: isActive ? "var(--accent)" : "transparent",
+								}}
+							>
+								<span style={{ color: isActive ? "var(--accent)" : "var(--ink-subtle)" }}>
+									{cat.icon}
+								</span>
+								{cat.label}
+							</Link>
+						);
+					})}
+				</div>
+			</div>
+		)}
 		</>
 	);
 }
