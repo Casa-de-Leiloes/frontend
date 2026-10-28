@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 import { useThemeStore } from "@/store/theme.store";
@@ -135,7 +135,58 @@ export function TopNav() {
 	const setUser = useAuthStore((s) => s.setUser);
 	const navigate = useNavigate();
 	const location = useLocation();
-	const [catModalOpen, setCatModalOpen] = useState(false);
+	const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const [hidden, setHidden] = useState(false);
+	const headerRef = useRef<HTMLElement>(null);
+	const catBtnRef = useRef<HTMLButtonElement>(null);
+	const lastScrollY = useRef(0);
+
+	// Hide on scroll down, reveal on scroll up
+	useEffect(() => {
+		function onScroll() {
+			const y = window.scrollY;
+			if (y > lastScrollY.current && y > 80) {
+				setHidden(true);
+				setCatDropdownOpen(false);
+				setMobileMenuOpen(false);
+			} else if (y < lastScrollY.current) {
+				setHidden(false);
+			}
+			lastScrollY.current = y;
+		}
+		window.addEventListener("scroll", onScroll, { passive: true });
+		return () => window.removeEventListener("scroll", onScroll);
+	}, []);
+
+	// Set CSS var for header height (used by main padding)
+	useEffect(() => {
+		const header = headerRef.current;
+		if (!header) return;
+		const ro = new ResizeObserver(() => {
+			document.documentElement.style.setProperty("--header-h", `${header.offsetHeight}px`);
+		});
+		ro.observe(header);
+		return () => ro.disconnect();
+	}, []);
+
+	// Close menus on route change
+	useEffect(() => {
+		setMobileMenuOpen(false);
+		setCatDropdownOpen(false);
+	}, [location.pathname, location.search]);
+
+	// Close cat dropdown on outside click
+	useEffect(() => {
+		if (!catDropdownOpen) return;
+		function onClickOutside(e: MouseEvent) {
+			if (catBtnRef.current && !catBtnRef.current.closest("[data-cat-dropdown]")?.contains(e.target as Node)) {
+				setCatDropdownOpen(false);
+			}
+		}
+		document.addEventListener("mousedown", onClickOutside);
+		return () => document.removeEventListener("mousedown", onClickOutside);
+	}, [catDropdownOpen]);
 
 	async function handleSignOut() {
 		await auth.signOut().catch(() => {});
@@ -153,8 +204,13 @@ export function TopNav() {
 	return (
 		<>
 		<header
-			className="sticky top-0 z-30"
-			style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
+			ref={headerRef}
+			className="fixed top-0 inset-x-0 z-30 transition-transform duration-300"
+			style={{
+				background: "var(--surface)",
+				borderBottom: "1px solid var(--border)",
+				transform: hidden ? "translateY(-100%)" : "translateY(0)",
+			}}
 		>
 			{/* Main bar */}
 			<div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center gap-2 sm:gap-4">
@@ -171,27 +227,65 @@ export function TopNav() {
 					</span>
 				</Link>
 
-				{/* Categorias button */}
-				<button
-					type="button"
-					onClick={() => setCatModalOpen(true)}
-					className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors rounded-md flex-shrink-0"
-					style={{ color: "var(--ink)", background: "transparent" }}
-					onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--subtle-bg2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; }}
-					onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--ink)"; }}
-				>
-					Categorias
-					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-						<path d="M6 9l6 6 6-6"/>
-					</svg>
-				</button>
+				{/* Categorias dropdown button */}
+				<div className="relative" data-cat-dropdown="">
+					<button
+						ref={catBtnRef}
+						type="button"
+						onClick={() => setCatDropdownOpen((v) => !v)}
+						className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors rounded-md flex-shrink-0"
+						style={{ color: catDropdownOpen ? "var(--accent)" : "var(--ink)", background: catDropdownOpen ? "var(--subtle-bg2)" : "transparent" }}
+					>
+						Categorias
+						<svg
+							width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+							aria-hidden
+							style={{ transition: "transform 0.2s", transform: catDropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+						>
+							<path d="M6 9l6 6 6-6"/>
+						</svg>
+					</button>
+
+					{/* Categorias dropdown panel */}
+					{catDropdownOpen && (
+						<div
+							className="absolute top-full left-0 mt-2 w-[480px] rounded-xl shadow-2xl p-4 z-50"
+							style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+						>
+							<p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--ink-subtle)" }}>
+								Categorias
+							</p>
+							<div className="grid grid-cols-2 gap-2">
+								{LOT_CATEGORIES.map((cat) => (
+									<Link
+										key={cat.key}
+										to={`/?lotCategory=${cat.key}`}
+										onClick={() => setCatDropdownOpen(false)}
+										className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors group"
+										style={{ background: "var(--subtle-bg)" }}
+									>
+										<span
+											className="w-3 h-3 rounded-full flex-shrink-0"
+											style={{ background: cat.color }}
+										/>
+										<span className="text-sm font-medium group-hover:underline" style={{ color: "var(--ink)" }}>
+											{cat.label}
+										</span>
+									</Link>
+								))}
+							</div>
+						</div>
+					)}
+				</div>
 
 				{/* Spacer */}
 				<div className="flex-1" />
 
-				{/* Right side */}
+				{/* Right side — desktop */}
 				<div className="flex items-center gap-3 flex-shrink-0">
-					<ThemeToggle />
+					<div className="hidden sm:block">
+						<ThemeToggle />
+					</div>
 					{user ? (
 						<>
 							{user.role === "BIDDER" && (
@@ -204,8 +298,8 @@ export function TopNav() {
 							{user.role === "AUCTIONEER" && (
 								<Link to="/auctioneer" className="hidden md:inline text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Painel</Link>
 							)}
-							<div className="flex items-center gap-2 border-l pl-3" style={{ borderColor: "var(--border)" }}>
-								<span className="hidden sm:inline text-sm font-medium max-w-[80px] truncate" style={{ color: "var(--ink)" }}>
+							<div className="hidden sm:flex items-center gap-2 border-l pl-3" style={{ borderColor: "var(--border)" }}>
+								<span className="text-sm font-medium max-w-[80px] truncate" style={{ color: "var(--ink)" }}>
 									{user.name}
 								</span>
 								<button
@@ -219,34 +313,65 @@ export function TopNav() {
 							</div>
 						</>
 					) : (
-						<>
+						<div className="hidden sm:flex items-center gap-2">
 							<Link to="/login" className="text-sm font-medium transition-colors" style={{ color: "var(--ink)" }}>
 								Entrar
 							</Link>
 							<Link
 								to="/register"
-								className="hidden sm:inline-block px-3 py-1.5 text-sm font-semibold text-white rounded-md transition-colors"
+								className="px-3 py-1.5 text-sm font-semibold text-white rounded-md transition-colors"
 								style={{ background: "var(--accent)" }}
 							>
 								Criar conta
 							</Link>
-						</>
+						</div>
 					)}
+
+					{/* Hamburger — mobile only */}
+					<button
+						type="button"
+						aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+						onClick={() => setMobileMenuOpen((v) => !v)}
+						className="sm:hidden w-9 h-9 flex flex-col items-center justify-center gap-1.5 rounded-md transition-colors"
+						style={{ color: "var(--ink)" }}
+					>
+						<span
+							className="block w-5 h-0.5 transition-all duration-200 origin-center"
+							style={{
+								background: "currentColor",
+								transform: mobileMenuOpen ? "rotate(45deg) translate(2px, 2px)" : "none",
+							}}
+						/>
+						<span
+							className="block w-5 h-0.5 transition-all duration-200"
+							style={{
+								background: "currentColor",
+								opacity: mobileMenuOpen ? 0 : 1,
+							}}
+						/>
+						<span
+							className="block w-5 h-0.5 transition-all duration-200 origin-center"
+							style={{
+								background: "currentColor",
+								transform: mobileMenuOpen ? "rotate(-45deg) translate(2px, -2px)" : "none",
+							}}
+						/>
+					</button>
 				</div>
 			</div>
 
-			{/* Trust bar — hidden on very small screens */}
+			{/* Trust bar — hidden on mobile */}
 			<div className="hidden sm:block py-1.5" style={{ background: "var(--subtle-bg)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
 				<div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-6 text-xs" style={{ color: "var(--ink-muted)" }}>
 					<span className="flex items-center gap-1">
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--positive)" strokeWidth="2">
 							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
 						</svg>
 						Lances auditáveis com hash chain
 					</span>
 					<span style={{ color: "var(--border)" }}>·</span>
 					<span className="flex items-center gap-1">
-						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2">
+						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2">
 							<rect x="3" y="11" width="18" height="11" rx="2"/>
 							<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
 						</svg>
@@ -279,57 +404,105 @@ export function TopNav() {
 					})}
 				</div>
 			</div>
-		</header>
 
-		{/* Categories modal */}
-		{catModalOpen && (
-			<div
-				className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4"
-				style={{ background: "rgba(0,0,0,0.6)" }}
-				onClick={() => setCatModalOpen(false)}
-			>
+			{/* Mobile dropdown menu */}
+			{mobileMenuOpen && (
 				<div
-					className="rounded-xl shadow-2xl w-full max-w-3xl p-8"
-					style={{ background: "var(--surface)" }}
-					onClick={(e) => e.stopPropagation()}
+					className="sm:hidden border-t"
+					style={{ background: "var(--surface)", borderColor: "var(--border)" }}
 				>
-					<div className="flex items-center justify-between mb-6">
-						<h2 className="text-3xl font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}>
+					{/* Categorias section */}
+					<div className="px-4 pt-4 pb-2">
+						<p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--ink-subtle)" }}>
 							Categorias
-						</h2>
-						<button
-							type="button"
-							onClick={() => setCatModalOpen(false)}
-							className="transition-colors p-1"
-							style={{ color: "var(--ink-muted)" }}
-							aria-label="Fechar"
-						>
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-								<path d="M18 6L6 18M6 6l12 12"/>
-							</svg>
-						</button>
-					</div>
-					<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-						{LOT_CATEGORIES.map((cat) => (
-							<Link
-								key={cat.key}
-								to={`/?lotCategory=${cat.key}`}
-								onClick={() => setCatModalOpen(false)}
-								className="relative h-24 rounded-lg overflow-hidden flex items-end p-3 group"
-								style={{ background: cat.color }}
-							>
-								<span
-									className="text-white font-semibold text-sm leading-tight drop-shadow-sm group-hover:underline"
-									style={{ fontFamily: "var(--font-display)" }}
+						</p>
+						<div className="grid grid-cols-2 gap-1.5">
+							{LOT_CATEGORIES.map((cat) => (
+								<Link
+									key={cat.key}
+									to={`/?lotCategory=${cat.key}`}
+									className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+									style={{ background: "var(--subtle-bg)", color: "var(--ink)" }}
 								>
+									<span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: cat.color }} />
 									{cat.label}
-								</span>
-							</Link>
-						))}
+								</Link>
+							))}
+						</div>
+					</div>
+
+					{/* User links */}
+					<div className="px-4 py-3 border-t" style={{ borderColor: "var(--border)" }}>
+						{user ? (
+							<>
+								<p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--ink-subtle)" }}>
+									Minha conta — {user.name}
+								</p>
+								<div className="flex flex-col gap-1">
+									{user.role === "BIDDER" && (
+										<>
+											<Link to="/bidder" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "var(--ink)", background: "var(--subtle-bg)" }}>
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+												Painel
+											</Link>
+											<Link to="/wallet" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "var(--ink)", background: "var(--subtle-bg)" }}>
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M16 12h.01"/></svg>
+												Carteira
+											</Link>
+											<Link to="/activity" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "var(--ink)", background: "var(--subtle-bg)" }}>
+												<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+												Atividade
+											</Link>
+										</>
+									)}
+									{user.role === "AUCTIONEER" && (
+										<Link to="/auctioneer" className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium" style={{ color: "var(--ink)", background: "var(--subtle-bg)" }}>
+											<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+											Painel
+										</Link>
+									)}
+								</div>
+								<button
+									type="button"
+									onClick={handleSignOut}
+									className="mt-2 w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium"
+									style={{ color: "var(--live)", background: "var(--subtle-bg)" }}
+								>
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+									Sair
+								</button>
+							</>
+						) : (
+							<div className="flex flex-col gap-2">
+								<Link
+									to="/login"
+									className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium border"
+									style={{ color: "var(--ink)", borderColor: "var(--border)", background: "var(--subtle-bg)" }}
+								>
+									Entrar
+								</Link>
+								<Link
+									to="/register"
+									className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold text-white"
+									style={{ background: "var(--accent)" }}
+								>
+									Criar conta
+								</Link>
+							</div>
+						)}
+					</div>
+
+					{/* Theme toggle */}
+					<div className="px-4 py-3 border-t flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
+						<span className="text-sm" style={{ color: "var(--ink-muted)" }}>Tema</span>
+						<ThemeToggle />
 					</div>
 				</div>
-			</div>
-		)}
+			)}
+		</header>
+
+		{/* Spacer to push content below fixed header */}
+		<div style={{ height: "var(--header-h, 152px)" }} aria-hidden />
 		</>
 	);
 }
