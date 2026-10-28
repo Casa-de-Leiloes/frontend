@@ -313,7 +313,6 @@ function LotGallery({
 	}
 
 	const thumbs = allImages.slice(1, 5);
-	const hasMore = allImages.length > 5;
 
 	return (
 		<>

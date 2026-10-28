@@ -138,7 +138,6 @@ export function TopNav() {
 	const [catDropdownOpen, setCatDropdownOpen] = useState(false);
 	const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-	const [hidden, setHidden] = useState(false);
 	const headerRef = useRef<HTMLElement>(null);
 	const catBtnRef = useRef<HTMLButtonElement>(null);
 	const userBtnRef = useRef<HTMLButtonElement>(null);
@@ -149,11 +148,8 @@ export function TopNav() {
 		function onScroll() {
 			const y = window.scrollY;
 			if (y > lastScrollY.current && y > 80) {
-				setHidden(true);
 				setCatDropdownOpen(false);
 				setMobileMenuOpen(false);
-			} else if (y < lastScrollY.current) {
-				setHidden(false);
 			}
 			lastScrollY.current = y;
 		}
