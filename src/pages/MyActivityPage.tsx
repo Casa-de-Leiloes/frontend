@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { users, wallet } from "@/lib/api";
@@ -99,9 +100,9 @@ export function MyActivityPage() {
 							</Link>
 						</div>
 					) : (
-						<div className="divide-y divide-[#F3F4F6]">
+						<div className="divide-y divide-[var(--border)]">
 							{wins.map((win) => (
-								<div key={win.lotId} className="flex items-center justify-between px-6 py-4 hover:bg-[#FAFAFA] transition-colors">
+								<div key={win.lotId} className="flex items-center justify-between px-6 py-4 transition-colors" onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.background = "var(--subtle-bg2)")} onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.background = "")}>
 									<div>
 										<Link
 											to={`/lots/${win.lotId}`}
@@ -174,9 +175,9 @@ export function MyActivityPage() {
 							<p className="text-sm text-[var(--ink-subtle)]">Nenhum lance dado ainda.</p>
 						</div>
 					) : (
-						<div className="divide-y divide-[#F3F4F6]">
+						<div className="divide-y divide-[var(--border)]">
 							{bidsData.items.map((bid) => (
-								<div key={bid.id} className="flex items-center justify-between px-6 py-3 hover:bg-[#FAFAFA] transition-colors">
+								<div key={bid.id} className="flex items-center justify-between px-6 py-3 transition-colors" onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.background = "var(--subtle-bg2)")} onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.background = "")}>
 									<div className="flex items-center gap-3">
 										<span className="text-[11px] text-[var(--ink-subtle)] tabular-nums">
 											#{bid.sequence}

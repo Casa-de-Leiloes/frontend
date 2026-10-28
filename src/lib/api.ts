@@ -43,6 +43,9 @@ export interface Lot {
 	snapshotId: string;
 	imageUrl: string | null;
 	additionalImages: string[];
+	attributes: Record<string, string | number | boolean | null>;
+	catalogExternalId: string | null;
+	catalogProvider: string | null;
 }
 
 export interface Bid {
@@ -179,6 +182,7 @@ export const wallet = {
 };
 
 export const users = {
+	me: () => request<{ id: string; name: string; maskedEmail: string | null; role: string }>("/users/me"),
 	myBids: (cursor?: string) => {
 		const qs = cursor ? `?cursor=${cursor}` : "";
 		return request<{ items: Bid[]; nextCursor: string | null }>(
@@ -186,6 +190,11 @@ export const users = {
 		);
 	},
 	myWins: () => request<Win[]>("/users/me/wins"),
+	exportData: async (): Promise<Blob> => {
+		const res = await fetch("/api/users/me/export", { credentials: "include" });
+		if (!res.ok) throw new Error("Export failed");
+		return res.blob();
+	},
 };
 
 export const catalog = {

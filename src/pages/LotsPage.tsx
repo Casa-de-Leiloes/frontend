@@ -7,6 +7,17 @@ import type { Lot } from "@/lib/api";
 type StatusFilter = "ALL" | "LIVE" | "SCHEDULED" | "CLOSED";
 type TimeFilter = "ENDS_TODAY" | "NONE";
 
+function effectiveStatus(lot: Lot): "LIVE" | "SCHEDULED" | "CLOSED" | "CANCELLED" {
+	if (lot.status === "CANCELLED") return "CANCELLED";
+	if (lot.status === "CLOSED") return "CLOSED";
+	const now = Date.now();
+	const endsAt = lot.endsAt ? new Date(lot.endsAt).getTime() : 0;
+	const startsAt = lot.startsAt ? new Date(lot.startsAt).getTime() : 0;
+	if (endsAt > 0 && endsAt <= now) return "CLOSED";
+	if (lot.status === "LIVE" && startsAt <= now && endsAt > now) return "LIVE";
+	return "SCHEDULED";
+}
+
 const LOT_CATEGORY_LABELS: Record<string, string> = {
 	FINE_ART: "Arte",
 	JEWELRY: "Joalharia",
@@ -125,7 +136,8 @@ function LotCard({ lot }: { lot: Lot }) {
 	const startsAtMs = lot.startsAt ? new Date(lot.startsAt).getTime() : 0;
 	const endsAtMs = lot.endsAt ? new Date(lot.endsAt).getTime() : 0;
 	const diffMs = Math.max(0, endsAtMs - nowMs);
-	const isLive = lot.status === "LIVE" && startsAtMs <= nowMs && endsAtMs > nowMs && diffMs > 0;
+	const effStatus = effectiveStatus(lot);
+	const isLive = effStatus === "LIVE" && startsAtMs <= nowMs && endsAtMs > nowMs && diffMs > 0;
 
 	return (
 		<Link to={`/lots/${lot.id}`} className="group block">
@@ -143,14 +155,14 @@ function LotCard({ lot }: { lot: Lot }) {
 							<LiveBadge />
 						</div>
 					)}
-					{lot.status === "CLOSED" && (
+					{effStatus === "CLOSED" && (
 						<div className="absolute inset-0 bg-black/20 flex items-end justify-start p-2">
 							<span className="text-[10px] font-medium text-white bg-black/60 px-2 py-0.5 rounded-full">
 								Encerrado
 							</span>
 						</div>
 					)}
-					{lot.status === "SCHEDULED" && (
+					{effStatus === "SCHEDULED" && (
 						<div className="absolute top-2 left-2 z-10">
 							<span className="text-[10px] font-semibold bg-white/90 px-2 py-0.5 rounded-full" style={{ color: "#0D0D0D" }}>
 								Agendado
@@ -396,16 +408,10 @@ export function LotsPage() {
 		refetchInterval: 15_000,
 	});
 
-	const allLots = data?.items.filter((l) => l.status !== "CANCELLED") ?? [];
-	const liveLots = allLots.filter((l) => {
-		if (l.status !== "LIVE") return false;
-		const nowMs = Date.now();
-		const s = l.startsAt ? new Date(l.startsAt).getTime() : 0;
-		const e = l.endsAt ? new Date(l.endsAt).getTime() : 0;
-		return s <= nowMs && e > nowMs;
-	});
-	const scheduledLots = allLots.filter((l) => l.status === "SCHEDULED");
-	const closedLots = allLots.filter((l) => l.status === "CLOSED");
+	const allLots = data?.items.filter((l) => effectiveStatus(l) !== "CANCELLED") ?? [];
+	const liveLots = allLots.filter((l) => effectiveStatus(l) === "LIVE");
+	const scheduledLots = allLots.filter((l) => effectiveStatus(l) === "SCHEDULED");
+	const closedLots = allLots.filter((l) => effectiveStatus(l) === "CLOSED");
 	const heroLot = liveLots[0] ?? scheduledLots[0] ?? null;
 
 	const q = query.trim().toLowerCase();

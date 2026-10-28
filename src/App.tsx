@@ -20,6 +20,7 @@ import { BidderPage } from "@/pages/BidderPage";
 import { MyActivityPage } from "@/pages/MyActivityPage";
 import { AuditPage } from "@/pages/AuditPage";
 import { ReceiptPage } from "@/pages/ReceiptPage";
+import { ProfilePage } from "@/pages/ProfilePage";
 
 const qc = new QueryClient({
 	defaultOptions: { queries: { staleTime: 10_000 } },
@@ -92,6 +93,7 @@ export function App() {
 							<Route path="/wallet" element={<RequireRole role="BIDDER"><WalletPage /></RequireRole>} />
 							<Route path="/auctioneer" element={<RequireRole role="AUCTIONEER"><AuctioneerPage /></RequireRole>} />
 							<Route path="/activity" element={<RequireAuth><MyActivityPage /></RequireAuth>} />
+							<Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
 							<Route path="/audit/:lotId" element={<AuditPage />} />
 							<Route path="/receipt/:token" element={<ReceiptPage />} />
 							<Route path="/login" element={<LoginPage />} />

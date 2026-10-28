@@ -122,6 +122,17 @@ export function WalletPage() {
 							{loading ? "Depositando…" : "Depositar"}
 						</Button>
 					</form>
+					<div className="mt-4 flex items-start gap-2.5 rounded-lg px-4 py-3" style={{ background: "var(--subtle-bg2)", border: "1px solid var(--border)" }}>
+						<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mt-0.5 shrink-0" style={{ color: "var(--ink-subtle)" }}>
+							<circle cx="12" cy="12" r="10" />
+							<path d="M12 8v4M12 16h.01" />
+						</svg>
+						<p className="text-xs leading-relaxed" style={{ color: "var(--ink-muted)" }}>
+							<span className="font-semibold" style={{ color: "var(--ink)" }}>Ambiente de demonstração.</span>{" "}
+							Por se tratar de um sistema de teste técnico, não foi integrado um gateway de pagamentos real.
+							Os depósitos são creditados instantaneamente para fins de simulação do fluxo de lances.
+						</p>
+					</div>
 					{success && (
 						<p className="mt-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
 							Depósito realizado com sucesso!
