@@ -153,7 +153,7 @@ export function TopNav() {
 	return (
 		<>
 		<header
-			className="fixed top-0 inset-x-0 z-30"
+			className="sticky top-0 z-30"
 			style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
 		>
 			{/* Main bar */}

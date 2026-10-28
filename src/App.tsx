@@ -72,7 +72,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 	return (
 		<div className="min-h-screen" style={{ background: "var(--ground)" }}>
 			<TopNav />
-			<main className="pt-[120px] sm:pt-[152px] min-h-screen">
+			<main className="min-h-screen">
 				{children}
 			</main>
 		</div>
