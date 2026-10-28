@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lots, bids, wallet, imgProxy } from "@/lib/api";
@@ -14,6 +15,17 @@ function formatCents(cents: string | null | undefined): string {
 		style: "currency",
 		currency: "BRL",
 	}).format(Number(cents) / 100);
+}
+
+function timeAgo(dateStr: string): string {
+	const diff = Date.now() - new Date(dateStr).getTime();
+	const mins = Math.floor(diff / 60000);
+	if (mins < 1) return "Agora";
+	if (mins < 60) return `Há ${mins} min`;
+	const hours = Math.floor(mins / 60);
+	if (hours < 24) return `Há ${hours}h`;
+	const days = Math.floor(hours / 24);
+	return `Há ${days} dia${days > 1 ? "s" : ""}`;
 }
 
 function useCountdownMs(endsAt: string | undefined): number {
@@ -77,6 +89,207 @@ function CountdownBlock({ ms, urgent }: { ms: number; urgent: boolean }) {
 	);
 }
 
+function LightboxMagnifier({ src, alt }: { src: string; alt: string }) {
+	const containerRef = useRef<HTMLDivElement>(null);
+	const [lens, setLens] = useState<{ x: number; y: number } | null>(null);
+	const LENS = 160;
+	const ZOOM = 3;
+
+	function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+		const rect = e.currentTarget.getBoundingClientRect();
+		const x = e.clientX - rect.left;
+		const y = e.clientY - rect.top;
+		setLens({ x, y });
+	}
+
+	return (
+		<div
+			ref={containerRef}
+			className="relative select-none"
+			style={{ cursor: lens ? "none" : "crosshair", display: "inline-block", maxWidth: "100%", maxHeight: "100%", overflow: "visible" }}
+			onMouseMove={onMouseMove}
+			onMouseLeave={() => setLens(null)}
+		>
+			<img
+				src={src}
+				alt={alt}
+				className="block max-w-[80vw] max-h-[70vh] object-contain"
+				draggable={false}
+			/>
+			{lens && containerRef.current && (() => {
+				const rect = containerRef.current.getBoundingClientRect();
+				const bgX = -(lens.x * ZOOM - LENS / 2);
+				const bgY = -(lens.y * ZOOM - LENS / 2);
+				return (
+					<div
+						style={{
+							position: "absolute",
+							left: lens.x - LENS / 2,
+							top: lens.y - LENS / 2,
+							width: LENS,
+							height: LENS,
+							border: "2px solid rgba(255,255,255,0.8)",
+							borderRadius: 4,
+							backgroundImage: `url(${src})`,
+							backgroundRepeat: "no-repeat",
+							backgroundSize: `${rect.width * ZOOM}px ${rect.height * ZOOM}px`,
+							backgroundPosition: `${bgX}px ${bgY}px`,
+							pointerEvents: "none",
+							boxShadow: "0 4px 24px rgba(0,0,0,0.6)",
+							overflow: "hidden",
+						}}
+					/>
+				);
+			})()}
+		</div>
+	);
+}
+
+function GalleryLightbox({
+	images,
+	startIndex,
+	title,
+	onClose,
+}: {
+	images: string[];
+	startIndex: number;
+	title: string;
+	onClose: () => void;
+}) {
+	const [idx, setIdx] = useState(startIndex);
+	const [zoomed, setZoomed] = useState(false);
+	const thumbsRef = useRef<HTMLDivElement>(null);
+	const total = images.length;
+	const src = imgProxy(images[idx]) ?? images[idx];
+
+	function prev() { setIdx((i) => (i - 1 + total) % total); setZoomed(false); }
+	function next() { setIdx((i) => (i + 1) % total); setZoomed(false); }
+
+	useEffect(() => {
+		function onKey(e: KeyboardEvent) {
+			if (e.key === "Escape") onClose();
+			if (e.key === "ArrowLeft") prev();
+			if (e.key === "ArrowRight") next();
+		}
+		document.addEventListener("keydown", onKey);
+		document.body.style.overflow = "hidden";
+		return () => {
+			document.removeEventListener("keydown", onKey);
+			document.body.style.overflow = "";
+		};
+	}, [idx]);
+
+	useEffect(() => {
+		const el = thumbsRef.current?.children[idx] as HTMLElement | undefined;
+		el?.scrollIntoView({ inline: "center", behavior: "smooth" });
+	}, [idx]);
+
+	return createPortal(
+		<div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#000" }}>
+			{/* Top bar */}
+			<div className="flex items-center justify-between px-5 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+				<span className="text-sm font-mono" style={{ color: "rgba(255,255,255,0.6)" }}>
+					{idx + 1} / {total}
+				</span>
+				<div className="flex items-center gap-2">
+					<button
+						type="button"
+						onClick={() => setZoomed((v) => !v)}
+						aria-label={zoomed ? "Reduzir zoom" : "Ampliar zoom"}
+						className="w-9 h-9 flex items-center justify-center rounded transition-colors"
+						style={{ background: zoomed ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)", color: "#fff" }}
+					>
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+							{zoomed
+								? <><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><line x1="8" y1="11" x2="14" y2="11"/></>
+								: <><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></>
+							}
+						</svg>
+					</button>
+					<button
+						type="button"
+						onClick={onClose}
+						aria-label="Fechar"
+						className="w-9 h-9 flex items-center justify-center rounded transition-colors"
+						style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}
+					>
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+							<path d="M18 6L6 18M6 6l12 12"/>
+						</svg>
+					</button>
+				</div>
+			</div>
+
+			{/* Image area */}
+			<div
+				className="flex-1 flex items-center justify-center relative overflow-hidden"
+				onClick={onClose}
+			>
+				{/* Prev */}
+				{total > 1 && (
+					<button
+						type="button"
+						onClick={(e) => { e.stopPropagation(); prev(); }}
+						className="absolute left-4 z-10 w-10 h-10 flex items-center justify-center rounded transition-colors"
+						style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
+					>
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+					</button>
+				)}
+
+				<div onClick={(e) => e.stopPropagation()}>
+					{zoomed
+						? <LightboxMagnifier src={src} alt={title} />
+						: <img
+							src={src}
+							alt={title}
+							className="block max-w-[80vw] max-h-[70vh] object-contain select-none"
+							draggable={false}
+						/>
+					}
+				</div>
+
+				{/* Next */}
+				{total > 1 && (
+					<button
+						type="button"
+						onClick={(e) => { e.stopPropagation(); next(); }}
+						className="absolute right-4 z-10 w-10 h-10 flex items-center justify-center rounded transition-colors"
+						style={{ background: "rgba(255,255,255,0.1)", color: "#fff" }}
+					>
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+					</button>
+				)}
+			</div>
+
+			{/* Thumbnail strip */}
+			{total > 1 && (
+				<div
+					ref={thumbsRef}
+					className="flex gap-2 px-4 py-3 overflow-x-auto flex-shrink-0"
+					style={{ scrollbarWidth: "none", borderTop: "1px solid rgba(255,255,255,0.1)" }}
+				>
+					{images.map((url, i) => (
+						<button
+							key={i}
+							type="button"
+							onClick={() => { setIdx(i); setZoomed(false); }}
+							className="flex-shrink-0 w-16 h-16 rounded overflow-hidden transition-all"
+							style={{
+								border: i === idx ? "2px solid var(--accent)" : "2px solid rgba(255,255,255,0.15)",
+								opacity: i === idx ? 1 : 0.55,
+							}}
+						>
+							<img src={imgProxy(url) ?? url} alt={`${title} ${i + 1}`} className="w-full h-full object-cover" />
+						</button>
+					))}
+				</div>
+			)}
+		</div>,
+		document.body,
+	);
+}
+
 function LotGallery({
 	mainImage,
 	additionalImages,
@@ -86,67 +299,86 @@ function LotGallery({
 	additionalImages: string[];
 	title: string;
 }) {
-	const allImages = [mainImage, ...additionalImages].filter(
-		(u): u is string => Boolean(u),
-	);
-	const [activeIdx, setActiveIdx] = useState(0);
-	const active = allImages[activeIdx] ?? null;
-	const proxied = imgProxy(active);
+	const allImages = [mainImage, ...additionalImages].filter((u): u is string => Boolean(u));
+	const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+	if (allImages.length === 0) {
+		return (
+			<div className="rounded-xl bg-[var(--subtle-bg)] border border-[var(--border)] flex items-center justify-center" style={{ aspectRatio: "4/3" }}>
+				<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1">
+					<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
+				</svg>
+			</div>
+		);
+	}
+
+	const thumbs = allImages.slice(1, 5);
+	const hasMore = allImages.length > 5;
 
 	return (
-		<div className="space-y-3">
-			<div
-				className="rounded-xl overflow-hidden bg-[var(--ground)] border border-[var(--border)]"
-				style={{ aspectRatio: "4/3" }}
-			>
-				{proxied ? (
+		<>
+			<div className="flex gap-2 rounded-xl overflow-hidden" style={{ aspectRatio: "4/3" }}>
+				{/* Main image */}
+				<button
+					type="button"
+					className="relative flex-1 overflow-hidden"
+					style={{ cursor: "zoom-in", background: "#0a0a0a", minWidth: 0 }}
+					onClick={() => setLightboxIdx(0)}
+				>
 					<img
-						src={proxied}
+						src={imgProxy(allImages[0]) ?? allImages[0]}
 						alt={title}
-						className="w-full h-full object-contain"
+						className="w-full h-full object-contain transition-transform duration-300 hover:scale-105"
+						draggable={false}
 					/>
-				) : (
-					<div className="w-full h-full flex items-center justify-center">
-						<svg
-							width="64"
-							height="64"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="#D1D5DB"
-							strokeWidth="1"
-						>
-							<rect x="3" y="3" width="18" height="18" rx="2" />
-							<circle cx="8.5" cy="8.5" r="1.5" />
-							<path d="m21 15-5-5L5 21" />
-						</svg>
+				</button>
+
+				{/* Thumbnail grid — only if more images */}
+				{thumbs.length > 0 && (
+					<div className="grid grid-rows-2 grid-cols-2 gap-2 flex-shrink-0" style={{ width: "38%" }}>
+						{thumbs.map((url, i) => {
+							const globalIdx = i + 1;
+							const isLast = i === 3 && (allImages.length > 5);
+							return (
+								<button
+									key={i}
+									type="button"
+									className="relative overflow-hidden rounded-sm"
+									style={{ cursor: "zoom-in", background: "#0a0a0a" }}
+									onClick={() => setLightboxIdx(globalIdx)}
+								>
+									<img
+										src={imgProxy(url) ?? url}
+										alt={`${title} ${globalIdx + 1}`}
+										className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+										draggable={false}
+									/>
+									{isLast && (
+										<div className="absolute inset-0 flex flex-col items-center justify-center gap-1" style={{ background: "rgba(0,0,0,0.65)" }}>
+											<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5">
+												<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+											</svg>
+											<span className="text-white text-[11px] font-medium leading-tight text-center">
+												Ver todas ({allImages.length})
+											</span>
+										</div>
+									)}
+								</button>
+							);
+						})}
 					</div>
 				)}
 			</div>
-			{allImages.length > 1 && (
-				<div
-					className="flex gap-2 overflow-x-auto pb-1"
-					style={{ scrollbarWidth: "none" }}
-				>
-					{allImages.map((url, i) => (
-						<button
-							key={i}
-							type="button"
-							onClick={() => setActiveIdx(i)}
-							className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors"
-							style={{
-								borderColor: i === activeIdx ? "var(--accent)" : "var(--border)",
-							}}
-						>
-							<img
-								src={imgProxy(url) ?? url}
-								alt={`${title} ${i + 1}`}
-								className="w-full h-full object-cover"
-							/>
-						</button>
-					))}
-				</div>
+
+			{lightboxIdx !== null && (
+				<GalleryLightbox
+					images={allImages}
+					startIndex={lightboxIdx}
+					title={title}
+					onClose={() => setLightboxIdx(null)}
+				/>
 			)}
-		</div>
+		</>
 	);
 }
 
@@ -204,19 +436,19 @@ function DataSection({
 		return [[key, String(val)] as [string, string]];
 	});
 
+	const EXTRA_BLOCKLIST = new Set([
+		"isPublicDomain", "isHighlight", "isTimelineWork", "accessionYear",
+		"primaryImageSmall", "primaryImage", "objectURL", "objectID",
+		"externalUrl", "description", "imageUrl", "additionalImages",
+		"rightsAndReproduction",
+	]);
+
 	const extra = Object.entries(attributes).filter(
 		([k, v]) =>
 			!ATTR_ORDER.includes(k) &&
 			Boolean(v) &&
 			!k.startsWith("_") &&
-			k !== "isPublicDomain" &&
-			k !== "isHighlight" &&
-			k !== "isTimelineWork" &&
-			k !== "accessionYear" &&
-			k !== "primaryImageSmall" &&
-			k !== "primaryImage" &&
-			k !== "objectURL" &&
-			k !== "objectID",
+			!EXTRA_BLOCKLIST.has(k),
 	) as [string, string][];
 
 	const all = [...entries, ...extra.map(([k, v]) => [k, String(v)] as [string, string])];
@@ -345,8 +577,11 @@ export function LotDetailPage() {
 
 	if (!lot)
 		return (
-			<div className="flex items-center justify-center h-64 text-[var(--ink-muted)] text-sm">
-				Carregando...
+			<div className="flex items-center justify-center h-64 gap-3" style={{ color: "var(--ink-subtle)" }}>
+				<svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+					<path d="M21 12a9 9 0 11-6.219-8.56" />
+				</svg>
+				<span className="text-sm">Loading…</span>
 			</div>
 		);
 
@@ -359,7 +594,7 @@ export function LotDetailPage() {
 	return (
 		<div className="bg-[var(--ground)] min-h-screen">
 			{/* Top breadcrumb bar */}
-			<div className="border-b border-[var(--border)] bg-[var(--surface)] sticky top-[108px] sm:top-[130px] z-10">
+			<div className="border-b border-[var(--border)] bg-[var(--surface)]">
 				<div className="max-w-7xl mx-auto px-6 h-11 flex items-center justify-between">
 					<nav className="flex items-center gap-1.5 text-xs text-[var(--ink-subtle)]">
 						<Link to="/" className="hover:text-[var(--ink)] transition-colors">
@@ -439,9 +674,23 @@ export function LotDetailPage() {
 								>
 									Descrição fornecida pelo leiloeiro
 								</h2>
-								<p className="text-sm text-[var(--ink-muted)] leading-relaxed whitespace-pre-line">
-									{lot.description}
-								</p>
+								<div
+									className="prose-description text-sm text-[var(--ink-muted)] leading-relaxed"
+									// eslint-disable-next-line react/no-danger
+									dangerouslySetInnerHTML={{
+										__html: (() => {
+											const tmp = document.createElement("div");
+											tmp.innerHTML = lot.description ?? "";
+											const text = tmp.textContent ?? tmp.innerText ?? "";
+											return text
+												.split(/\n{2,}/)
+												.map((p) => p.trim())
+												.filter(Boolean)
+												.map((p) => `<p>${p}</p>`)
+												.join("");
+										})(),
+									}}
+								/>
 							</div>
 						)}
 
@@ -515,7 +764,7 @@ export function LotDetailPage() {
 					</div>
 
 					{/* RIGHT sticky panel */}
-					<div className="lg:sticky lg:top-[160px] space-y-4">
+					<div className="lg:sticky space-y-4" style={{ top: "calc(var(--header-h, 152px) + 1rem)" }}>
 						{/* Countdown (LIVE only) */}
 						{isLive && remaining > 0 && (
 							<div
@@ -561,6 +810,38 @@ export function LotDetailPage() {
 								</p>
 							)}
 						</div>
+
+						{/* Mini bid history */}
+						{liveBids.length > 0 && (
+							<div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+								<div className="flex items-center justify-between mb-3">
+									<p className="text-xs font-semibold text-[var(--ink)]">
+										{liveBids.length} {liveBids.length === 1 ? "lance" : "lances"}
+									</p>
+									<Link
+										to={`/audit/${lot.id}`}
+										className="text-xs text-[var(--accent)] hover:underline"
+									>
+										Ver todos →
+									</Link>
+								</div>
+								<div className="space-y-2">
+									{[...liveBids].reverse().slice(0, 4).map((bid) => (
+										<div key={bid.id} className="flex items-center justify-between text-xs">
+											<span className="text-[var(--ink-muted)] font-mono truncate max-w-[100px]">
+												{bid.pseudonym}
+											</span>
+											<span className="text-[var(--ink-subtle)]">
+												{timeAgo(bid.placedAt)}
+											</span>
+											<span className="font-semibold tabular-nums" style={{ color: "var(--accent)" }}>
+												{formatCents(bid.amountCents)}
+											</span>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
 
 						{/* Position pill (BIDDER + LIVE) */}
 						{user?.role === "BIDDER" && isLive && position && (
@@ -609,6 +890,30 @@ export function LotDetailPage() {
 										</span>
 									</div>
 								)}
+								{/* Quick bid chips */}
+								{(() => {
+									const inc = Number(lot.minIncrementCents);
+									const chips = [minNext, minNext + inc, minNext + inc * 4];
+									return (
+										<div className="flex gap-2">
+											{chips.map((c) => (
+												<button
+													key={c}
+													type="button"
+													onClick={() => setBidAmount((c / 100).toFixed(2))}
+													className="flex-1 text-xs font-medium rounded-lg px-2 py-2 border transition-colors"
+													style={{
+														borderColor: bidAmount === (c / 100).toFixed(2) ? "var(--accent)" : "var(--border)",
+														background: bidAmount === (c / 100).toFixed(2) ? "rgba(29,78,216,0.08)" : "var(--subtle-bg)",
+														color: bidAmount === (c / 100).toFixed(2) ? "var(--accent)" : "var(--ink)",
+													}}
+												>
+													{formatCents(String(c))}
+												</button>
+											))}
+										</div>
+									);
+								})()}
 								<form onSubmit={handlePlaceBid} className="flex gap-2">
 									<CurrencyInput
 										value={bidAmount}

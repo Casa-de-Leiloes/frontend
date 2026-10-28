@@ -72,3 +72,10 @@ pre,
 .font-mono {
   font-family: "Geist Mono", "Menlo", "Consolas", ui-monospace, monospace;
 }
+
+.prose-description p { margin-bottom: 0.75rem; }
+.prose-description p:last-child { margin-bottom: 0; }
+.prose-description a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.prose-description a:hover { opacity: 0.8; }
+.prose-description em, .prose-description i { font-style: italic; }
+.prose-description strong, .prose-description b { font-weight: 600; color: var(--ink); }
