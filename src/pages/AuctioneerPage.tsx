@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { translateError } from "@/lib/errors";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import type { CatalogItem } from "@/lib/api";
 
 function stripHtml(html: string): string {
@@ -32,25 +33,25 @@ function formatCents(cents: string | null | undefined): string {
 function StatusBadge({ status }: { status: string }) {
 	if (status === "LIVE")
 		return (
-			<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#DC2626] text-white">
-				<span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+			<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[var(--live)] text-white">
+				<span className="w-1.5 h-1.5 rounded-full bg-[var(--surface)] animate-pulse" />
 				Ao vivo
 			</span>
 		);
 	if (status === "SCHEDULED")
 		return (
-			<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">
+			<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EFF6FF] text-[var(--accent)] border border-[#BFDBFE]">
 				Agendado
 			</span>
 		);
 	if (status === "CANCELLED")
 		return (
-			<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]">
+			<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#FEF2F2] text-[var(--live)] border border-[#FECACA]">
 				Cancelado
 			</span>
 		);
 	return (
-		<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB]">
+		<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--subtle-bg2)] text-[#374151] border border-[#E5E7EB]">
 			Encerrado
 		</span>
 	);
@@ -106,7 +107,12 @@ export function AuctioneerPage() {
 		allLots?.items.filter((l) => l.auctioneerId === user?.id) ?? [];
 
 	const stats = useMemo(() => {
-		const live = myLots.filter((l) => l.status === "LIVE");
+		const live = myLots.filter((l) => {
+			const nowMs = Date.now();
+			const s = l.startsAt ? new Date(l.startsAt).getTime() : 0;
+			const e = l.endsAt ? new Date(l.endsAt).getTime() : 0;
+			return l.status === "LIVE" && s <= nowMs && e > nowMs;
+		});
 		const scheduled = myLots.filter((l) => l.status === "SCHEDULED");
 		const closed = myLots.filter((l) => l.status === "CLOSED");
 		const totalBids = myLots.reduce((s, l) => s + l.bidCount, 0);
@@ -181,17 +187,17 @@ export function AuctioneerPage() {
 	}
 
 	return (
-		<div className="min-h-screen bg-[#F5F4F0]">
+		<div className="min-h-screen bg-[var(--ground)]">
 			{/* Dashboard header */}
-			<div className="bg-white border-b border-[#E4E4E2]">
+			<div className="bg-[var(--surface)] border-b border-[var(--border)]">
 				<div className="max-w-5xl mx-auto px-6 py-6">
 					<div className="flex items-center justify-between">
 						<div>
-							<p className="text-xs text-[#9CA3AF] font-medium tracking-wider uppercase mb-1">
+							<p className="text-xs text-[var(--ink-subtle)] font-medium tracking-wider uppercase mb-1">
 								Painel do Leiloeiro
 							</p>
 							<h1
-								className="text-2xl font-bold text-[#0D0D0D]"
+								className="text-2xl font-bold text-[var(--ink)]"
 								style={{ fontFamily: "var(--font-display)" }}
 							>
 								Olá, {user?.name?.split(" ")[0] ?? "Leiloeiro"}
@@ -222,21 +228,21 @@ export function AuctioneerPage() {
 			<div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
 				{/* Stats row */}
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Ao vivo</p>
-						<p className="text-3xl font-bold text-[#DC2626] tabular-nums">{stats.live.length}</p>
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4">
+						<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider mb-1.5">Ao vivo</p>
+						<p className="text-3xl font-bold text-[var(--live)] tabular-nums">{stats.live.length}</p>
 					</div>
-					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Agendados</p>
-						<p className="text-3xl font-bold text-[#1D4ED8] tabular-nums">{stats.scheduled.length}</p>
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4">
+						<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider mb-1.5">Agendados</p>
+						<p className="text-3xl font-bold text-[var(--accent)] tabular-nums">{stats.scheduled.length}</p>
 					</div>
-					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Total lances</p>
-						<p className="text-3xl font-bold text-[#0D0D0D] tabular-nums">{stats.totalBids}</p>
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4">
+						<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider mb-1.5">Total lances</p>
+						<p className="text-3xl font-bold text-[var(--ink)] tabular-nums">{stats.totalBids}</p>
 					</div>
-					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">Recebido</p>
-						<p className="text-xl font-bold text-[#16A34A] tabular-nums leading-tight mt-1">
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4">
+						<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider mb-1.5">Recebido</p>
+						<p className="text-xl font-bold text-[var(--positive)] tabular-nums leading-tight mt-1">
 							{formatCents(String(stats.totalReceived))}
 						</p>
 					</div>
@@ -244,8 +250,8 @@ export function AuctioneerPage() {
 
 				{/* Create lot form — collapsible */}
 				{formOpen && (
-					<div className="bg-white rounded-xl border border-[#E4E4E2] p-6">
-						<h2 className="text-base font-semibold text-[#0D0D0D] mb-5">Criar novo lote</h2>
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-6">
+						<h2 className="text-base font-semibold text-[var(--ink)] mb-5">Criar novo lote</h2>
 						<div className="space-y-5">
 							{createSuccess && (
 								<p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
@@ -288,7 +294,7 @@ export function AuctioneerPage() {
 							</div>
 
 							{searchResults && searchResults.items.length > 0 && (
-								<div className="border border-[#E4E4E2] rounded-lg divide-y max-h-48 overflow-y-auto">
+								<div className="border border-[var(--border)] rounded-lg divide-y max-h-48 overflow-y-auto">
 									{searchResults.items.map((item) => (
 										<button
 											key={item.providerId}
@@ -298,7 +304,7 @@ export function AuctioneerPage() {
 										>
 											<span className="font-medium">{item.title}</span>
 											{item.description && (
-												<span className="text-[#9CA3AF] ml-2 line-clamp-1">· {stripHtml(item.description)}</span>
+												<span className="text-[var(--ink-subtle)] ml-2 line-clamp-1">· {stripHtml(item.description)}</span>
 											)}
 										</button>
 									))}
@@ -312,7 +318,7 @@ export function AuctioneerPage() {
 									.filter(([, v]) => v !== null && v !== "")
 									.slice(0, 4);
 								return (
-									<div className="flex gap-4 bg-[#F9FAFB] border border-[#E4E4E2] rounded-lg p-4">
+									<div className="flex gap-4 bg-[#F9FAFB] border border-[var(--border)] rounded-lg p-4">
 										{proxyImg && (
 											<img
 												src={proxyImg}
@@ -323,12 +329,12 @@ export function AuctioneerPage() {
 										<div className="flex-1 min-w-0">
 											<div className="flex items-start gap-2 mb-1">
 												<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2.5" className="mt-0.5 flex-shrink-0" aria-hidden><path d="M20 6L9 17l-5-5"/></svg>
-												<p className="text-sm font-semibold text-[#0D0D0D] line-clamp-2">{item.title}</p>
+												<p className="text-sm font-semibold text-[var(--ink)] line-clamp-2">{item.title}</p>
 											</div>
 											{attrs.length > 0 && (
 												<div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
 													{attrs.map(([k, v]) => (
-														<span key={k} className="text-xs text-[#6B7280]">
+														<span key={k} className="text-xs text-[var(--ink-muted)]">
 															<span className="font-medium capitalize">{k}:</span> {String(v)}
 														</span>
 													))}
@@ -366,12 +372,12 @@ export function AuctioneerPage() {
 											<button
 												type="button"
 												onClick={() => setForm((prev) => ({ ...prev, additionalImages: prev.additionalImages.filter((_, j) => j !== i) }))}
-												className="px-2 py-1 text-xs text-[#DC2626] hover:text-white hover:bg-[#DC2626] border border-[#FECACA] rounded transition-colors"
+												className="px-2 py-1 text-xs text-[var(--live)] hover:text-white hover:bg-[var(--live)] border border-[#FECACA] rounded transition-colors"
 											>✕</button>
 										</div>
 									))}
 									{form.additionalImages.length < 10 && (
-										<button type="button" onClick={() => setForm((prev) => ({ ...prev, additionalImages: [...prev.additionalImages, ""] }))} className="text-xs text-[#1D4ED8] hover:underline">
+										<button type="button" onClick={() => setForm((prev) => ({ ...prev, additionalImages: [...prev.additionalImages, ""] }))} className="text-xs text-[var(--accent)] hover:underline">
 											+ Adicionar imagem
 										</button>
 									)}
@@ -379,11 +385,11 @@ export function AuctioneerPage() {
 
 								<div className="space-y-1.5">
 									<label className="text-sm font-medium text-[#374151]">Lance inicial (R$)</label>
-									<Input type="number" min="0.01" step="0.01" value={form.startingBid} onChange={(e) => setForm((prev) => ({ ...prev, startingBid: e.target.value }))} placeholder="Ex: 100.00" />
+									<CurrencyInput value={form.startingBid} onChange={(v) => setForm((prev) => ({ ...prev, startingBid: v }))} placeholder="100,00" />
 								</div>
 								<div className="space-y-1.5">
 									<label className="text-sm font-medium text-[#374151]">Incremento mínimo (R$)</label>
-									<Input type="number" min="0.01" step="0.01" value={form.minIncrement} onChange={(e) => setForm((prev) => ({ ...prev, minIncrement: e.target.value }))} placeholder="Ex: 10.00" />
+									<CurrencyInput value={form.minIncrement} onChange={(v) => setForm((prev) => ({ ...prev, minIncrement: v }))} placeholder="10,00" />
 								</div>
 								<div className="space-y-1.5">
 									<label className="text-sm font-medium text-[#374151]">Início</label>
@@ -396,7 +402,7 @@ export function AuctioneerPage() {
 							</div>
 
 							{createError && (
-								<p className="text-sm text-[#DC2626] bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-4 py-2.5">
+								<p className="text-sm text-[var(--live)] bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-4 py-2.5">
 									{createError}
 								</p>
 							)}
@@ -408,7 +414,7 @@ export function AuctioneerPage() {
 								>
 									{createMutation.isPending ? "Criando…" : "Criar lote"}
 								</Button>
-								<button type="button" onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
+								<button type="button" onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors">
 									Cancelar
 								</button>
 							</div>
@@ -417,12 +423,12 @@ export function AuctioneerPage() {
 				)}
 
 				{/* My lots */}
-				<div className="bg-white rounded-xl border border-[#E4E4E2] overflow-hidden">
+				<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden">
 					{/* Lots header with tab filters */}
 					<div className="px-6 py-4 border-b border-[#F3F4F6] flex items-center justify-between gap-4 flex-wrap">
-						<h2 className="text-base font-semibold text-[#0D0D0D]">
+						<h2 className="text-base font-semibold text-[var(--ink)]">
 							Meus lotes
-							<span className="ml-2 text-sm font-normal text-[#9CA3AF]">{myLots.length}</span>
+							<span className="ml-2 text-sm font-normal text-[var(--ink-subtle)]">{myLots.length}</span>
 						</h2>
 						<div className="flex gap-1">
 							{(["ALL", "LIVE", "SCHEDULED", "CLOSED", "CANCELLED"] as LotTab[]).map((tab) => {
@@ -452,11 +458,11 @@ export function AuctioneerPage() {
 							<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" strokeWidth="1.5" className="mx-auto mb-3" aria-hidden>
 								<path d="M12 2a7 7 0 1 0 0 14A7 7 0 0 0 12 2z"/><path d="M12 8v4m0 4h.01"/>
 							</svg>
-							<p className="text-sm text-[#9CA3AF]">
+							<p className="text-sm text-[var(--ink-subtle)]">
 								{lotTab === "ALL" ? "Nenhum lote criado ainda." : "Nenhum lote nesta categoria."}
 							</p>
 							{lotTab === "ALL" && (
-								<button type="button" onClick={() => setFormOpen(true)} className="mt-3 text-sm text-[#1D4ED8] hover:underline font-medium">
+								<button type="button" onClick={() => setFormOpen(true)} className="mt-3 text-sm text-[var(--accent)] hover:underline font-medium">
 									Criar primeiro lote →
 								</button>
 							)}
@@ -467,7 +473,7 @@ export function AuctioneerPage() {
 								const proxyUrl = imgProxy(lot.imageUrl);
 								return (
 									<div key={lot.id} className="flex items-center gap-4 px-6 py-3.5 hover:bg-[#FAFAFA] transition-colors group">
-										<div className="flex-shrink-0 w-11 h-11 rounded-lg overflow-hidden bg-[#F5F4F0]">
+										<div className="flex-shrink-0 w-11 h-11 rounded-lg overflow-hidden bg-[var(--ground)]">
 											{proxyUrl ? (
 												<img src={proxyUrl} alt={lot.title} className="w-full h-full object-cover" />
 											) : (
@@ -479,20 +485,20 @@ export function AuctioneerPage() {
 											)}
 										</div>
 										<div className="flex-1 min-w-0">
-											<Link to={`/lots/${lot.id}`} className="text-sm font-semibold text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors line-clamp-1">
+											<Link to={`/lots/${lot.id}`} className="text-sm font-semibold text-[var(--ink)] hover:text-[var(--accent)] transition-colors line-clamp-1">
 												{lot.title}
 											</Link>
 											<div className="flex items-center gap-3 mt-0.5">
-												<span className="text-xs text-[#9CA3AF] tabular-nums">
+												<span className="text-xs text-[var(--ink-subtle)] tabular-nums">
 													{lot.bidCount} lance{lot.bidCount !== 1 ? "s" : ""}
 												</span>
 												{lot.status === "CLOSED" ? (
 													lot.bidCount > 0 ? (
-														<span className="text-xs font-semibold tabular-nums text-[#16A34A]">
+														<span className="text-xs font-semibold tabular-nums text-[var(--positive)]">
 															Arrematado · {formatCents(lot.currentBidCents)}
 														</span>
 													) : (
-														<span className="text-xs text-[#9CA3AF]">Sem lances</span>
+														<span className="text-xs text-[var(--ink-subtle)]">Sem lances</span>
 													)
 												) : (
 													<span className="text-xs font-semibold tabular-nums" style={{ color: lot.bidCount > 0 ? "#1D4ED8" : "#9CA3AF" }}>
@@ -508,7 +514,7 @@ export function AuctioneerPage() {
 													type="button"
 													onClick={() => { if (confirm(`Cancelar lote "${lot.title}"?`)) cancelMutation.mutate(lot.id); }}
 													disabled={cancelMutation.isPending}
-													className="opacity-0 group-hover:opacity-100 text-xs text-[#DC2626] hover:text-white hover:bg-[#DC2626] border border-[#FECACA] px-2.5 py-1 rounded-full transition-all disabled:opacity-50"
+													className="opacity-0 group-hover:opacity-100 text-xs text-[var(--live)] hover:text-white hover:bg-[var(--live)] border border-[#FECACA] px-2.5 py-1 rounded-full transition-all disabled:opacity-50"
 												>
 													Cancelar
 												</button>

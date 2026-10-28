@@ -27,12 +27,14 @@ const qc = new QueryClient({
 
 function AuthLoader({ children }: { children: React.ReactNode }) {
 	const setUser = useAuthStore((s) => s.setUser);
+	const setLoading = useAuthStore((s) => s.setLoading);
 	useEffect(() => {
 		auth
 			.session()
 			.then((r) => setUser(r.user))
-			.catch(() => {});
-	}, [setUser]);
+			.catch(() => setUser(null))
+			.finally(() => setLoading(false));
+	}, [setUser, setLoading]);
 	return <>{children}</>;
 }
 
@@ -40,6 +42,8 @@ const AUTH_ROUTES = ["/login", "/register"];
 
 function RequireRole({ role, children }: { role: "AUCTIONEER" | "BIDDER"; children: ReactNode }) {
 	const user = useAuthStore((s) => s.user);
+	const loading = useAuthStore((s) => s.loading);
+	if (loading) return null;
 	if (!user) return <Navigate to="/login" replace />;
 	if (user.role !== role) return <Navigate to="/" replace />;
 	return <>{children}</>;
@@ -47,6 +51,8 @@ function RequireRole({ role, children }: { role: "AUCTIONEER" | "BIDDER"; childr
 
 function RequireAuth({ children }: { children: ReactNode }) {
 	const user = useAuthStore((s) => s.user);
+	const loading = useAuthStore((s) => s.loading);
+	if (loading) return null;
 	if (!user) return <Navigate to="/login" replace />;
 	return <>{children}</>;
 }
@@ -57,16 +63,16 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 	if (isAuthRoute) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-[#F5F4F0] px-4">
+			<div className="min-h-screen flex items-center justify-center px-4" style={{ background: "var(--ground)" }}>
 				{children}
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-[#F5F4F0]">
+		<div className="min-h-screen" style={{ background: "var(--ground)" }}>
 			<TopNav />
-			<main className="pt-[152px] min-h-screen">
+			<main className="pt-[120px] sm:pt-[152px] min-h-screen">
 				{children}
 			</main>
 		</div>

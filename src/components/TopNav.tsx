@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
+import { useThemeStore } from "@/store/theme.store";
 
 const LOT_CATEGORIES = [
 	{ key: "FINE_ART", label: "Arte", color: "#7AB8A0" },
@@ -106,6 +107,29 @@ const CATEGORIES = [
 	},
 ];
 
+function ThemeToggle() {
+	const { theme, toggle } = useThemeStore();
+	return (
+		<button
+			type="button"
+			onClick={toggle}
+			aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
+			className="w-8 h-8 flex items-center justify-center rounded-md transition-colors hover:bg-[var(--subtle-bg2)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
+		>
+			{theme === "dark" ? (
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+					<circle cx="12" cy="12" r="5"/>
+					<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+				</svg>
+			) : (
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+				</svg>
+			)}
+		</button>
+	);
+}
+
 export function TopNav() {
 	const user = useAuthStore((s) => s.user);
 	const setUser = useAuthStore((s) => s.setUser);
@@ -128,17 +152,20 @@ export function TopNav() {
 
 	return (
 		<>
-		<header className="fixed top-0 inset-x-0 z-30 bg-white" style={{ borderBottom: "1px solid #E4E4E2" }}>
+		<header
+			className="fixed top-0 inset-x-0 z-30"
+			style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}
+		>
 			{/* Main bar */}
-			<div className="max-w-7xl mx-auto px-6 h-14 flex items-center gap-4">
+			<div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center gap-2 sm:gap-4">
 				{/* Logo */}
 				<Link to="/" className="flex-shrink-0 mr-1">
-					<span className="text-[10px] font-semibold tracking-[0.2em] text-[#9CA3AF] uppercase block leading-none">
+					<span className="text-[10px] font-semibold tracking-[0.2em] uppercase block leading-none" style={{ color: "var(--ink-subtle)" }}>
 						Casa de
 					</span>
 					<span
-						className="text-lg font-bold text-[#0D0D0D] leading-tight block"
-						style={{ fontFamily: "var(--font-display)" }}
+						className="text-lg font-bold leading-tight block"
+						style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
 					>
 						Leilões
 					</span>
@@ -148,7 +175,10 @@ export function TopNav() {
 				<button
 					type="button"
 					onClick={() => setCatModalOpen(true)}
-					className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors rounded-md hover:bg-[#F3F4F6] flex-shrink-0"
+					className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors rounded-md flex-shrink-0"
+					style={{ color: "var(--ink)", background: "transparent" }}
+					onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--subtle-bg2)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--accent)"; }}
+					onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--ink)"; }}
 				>
 					Categorias
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -161,34 +191,28 @@ export function TopNav() {
 
 				{/* Right side */}
 				<div className="flex items-center gap-3 flex-shrink-0">
+					<ThemeToggle />
 					{user ? (
 						<>
 							{user.role === "BIDDER" && (
-								<>
-									<Link to="/bidder" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
-										Painel
-									</Link>
-									<Link to="/wallet" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
-										Carteira
-									</Link>
-									<Link to="/activity" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
-										Atividade
-									</Link>
-								</>
+								<div className="hidden md:flex items-center gap-3">
+									<Link to="/bidder" className="text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Painel</Link>
+									<Link to="/wallet" className="text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Carteira</Link>
+									<Link to="/activity" className="text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Atividade</Link>
+								</div>
 							)}
 							{user.role === "AUCTIONEER" && (
-								<Link to="/auctioneer" className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors">
-									Painel
-								</Link>
+								<Link to="/auctioneer" className="hidden md:inline text-sm transition-colors" style={{ color: "var(--ink-muted)" }}>Painel</Link>
 							)}
-							<div className="flex items-center gap-3 border-l pl-3" style={{ borderColor: "#E4E4E2" }}>
-								<span className="text-sm font-medium text-[#0D0D0D] max-w-[100px] truncate">
+							<div className="flex items-center gap-2 border-l pl-3" style={{ borderColor: "var(--border)" }}>
+								<span className="hidden sm:inline text-sm font-medium max-w-[80px] truncate" style={{ color: "var(--ink)" }}>
 									{user.name}
 								</span>
 								<button
 									type="button"
 									onClick={handleSignOut}
-									className="text-sm text-[#6B7280] hover:text-[#0D0D0D] transition-colors"
+									className="text-sm transition-colors"
+									style={{ color: "var(--ink-muted)" }}
 								>
 									Sair
 								</button>
@@ -196,13 +220,13 @@ export function TopNav() {
 						</>
 					) : (
 						<>
-							<Link to="/login" className="text-sm font-medium text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors">
+							<Link to="/login" className="text-sm font-medium transition-colors" style={{ color: "var(--ink)" }}>
 								Entrar
 							</Link>
 							<Link
 								to="/register"
-								className="px-4 py-1.5 text-sm font-semibold text-white rounded-md transition-colors"
-								style={{ background: "#1D4ED8" }}
+								className="hidden sm:inline-block px-3 py-1.5 text-sm font-semibold text-white rounded-md transition-colors"
+								style={{ background: "var(--accent)" }}
 							>
 								Criar conta
 							</Link>
@@ -211,16 +235,16 @@ export function TopNav() {
 				</div>
 			</div>
 
-			{/* Trust bar */}
-			<div className="bg-[#F9FAFB] border-t border-b border-[#E4E4E2] py-1.5">
-				<div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-6 text-xs text-[#6B7280]">
+			{/* Trust bar — hidden on very small screens */}
+			<div className="hidden sm:block py-1.5" style={{ background: "var(--subtle-bg)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+				<div className="max-w-7xl mx-auto px-6 flex items-center justify-center gap-6 text-xs" style={{ color: "var(--ink-muted)" }}>
 					<span className="flex items-center gap-1">
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2">
 							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
 						</svg>
 						Lances auditáveis com hash chain
 					</span>
-					<span className="text-[#E4E4E2]">·</span>
+					<span style={{ color: "var(--border)" }}>·</span>
 					<span className="flex items-center gap-1">
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" strokeWidth="2">
 							<rect x="3" y="11" width="18" height="11" rx="2"/>
@@ -242,11 +266,11 @@ export function TopNav() {
 								to={cat.href}
 								className="flex flex-col items-center gap-1 px-3 py-2.5 text-[11px] font-medium whitespace-nowrap transition-colors flex-shrink-0 border-b-2"
 								style={{
-									color: isActive ? "#1D4ED8" : "#6B7280",
-									borderBottomColor: isActive ? "#1D4ED8" : "transparent",
+									color: isActive ? "var(--accent)" : "var(--ink-muted)",
+									borderBottomColor: isActive ? "var(--accent)" : "transparent",
 								}}
 							>
-								<span style={{ color: isActive ? "#1D4ED8" : "#9CA3AF" }}>
+								<span style={{ color: isActive ? "var(--accent)" : "var(--ink-subtle)" }}>
 									{cat.icon}
 								</span>
 								{cat.label}
@@ -261,21 +285,23 @@ export function TopNav() {
 		{catModalOpen && (
 			<div
 				className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4"
-				style={{ background: "rgba(0,0,0,0.5)" }}
+				style={{ background: "rgba(0,0,0,0.6)" }}
 				onClick={() => setCatModalOpen(false)}
 			>
 				<div
-					className="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-8"
+					className="rounded-xl shadow-2xl w-full max-w-3xl p-8"
+					style={{ background: "var(--surface)" }}
 					onClick={(e) => e.stopPropagation()}
 				>
 					<div className="flex items-center justify-between mb-6">
-						<h2 className="text-3xl font-bold text-[#0D0D0D]" style={{ fontFamily: "var(--font-display)" }}>
+						<h2 className="text-3xl font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}>
 							Categorias
 						</h2>
 						<button
 							type="button"
 							onClick={() => setCatModalOpen(false)}
-							className="text-[#6B7280] hover:text-[#0D0D0D] transition-colors p-1"
+							className="transition-colors p-1"
+							style={{ color: "var(--ink-muted)" }}
 							aria-label="Fechar"
 						>
 							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -91,8 +91,8 @@ function LotImage({ src, alt }: { src: string | null; alt: string }) {
 	const proxied = imgProxy(src);
 	if (!proxied || failed) {
 		return (
-			<div className="w-full h-full bg-[#F5F4F0] flex items-center justify-center p-4">
-				<span className="text-[#9CA3AF] text-xs text-center line-clamp-3">
+			<div className="w-full h-full flex items-center justify-center p-4" style={{ background: "var(--ground)" }}>
+				<span className="text-xs text-center line-clamp-3" style={{ color: "var(--ink-subtle)" }}>
 					{alt}
 				</span>
 			</div>
@@ -111,7 +111,7 @@ function LotImage({ src, alt }: { src: string | null; alt: string }) {
 
 function LiveBadge() {
 	return (
-		<span className="inline-flex items-center gap-1 bg-[#DC2626] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+		<span className="inline-flex items-center gap-1 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "var(--live)" }}>
 			<span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
 			AO VIVO
 		</span>
@@ -121,11 +121,18 @@ function LiveBadge() {
 function LotCard({ lot }: { lot: Lot }) {
 	const timeLeft = useTimeLeft(lot.endsAt);
 	const bidCents = lot.currentBidCents ?? lot.startingBidCents;
-	const isLive = lot.status === "LIVE";
+	const nowMs = Date.now();
+	const startsAtMs = lot.startsAt ? new Date(lot.startsAt).getTime() : 0;
+	const endsAtMs = lot.endsAt ? new Date(lot.endsAt).getTime() : 0;
+	const diffMs = Math.max(0, endsAtMs - nowMs);
+	const isLive = lot.status === "LIVE" && startsAtMs <= nowMs && endsAtMs > nowMs && diffMs > 0;
 
 	return (
 		<Link to={`/lots/${lot.id}`} className="group block">
-			<div className="bg-white rounded-xl border border-[#E4E4E2] overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
+			<div
+				className="rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200"
+				style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+			>
 				{/* Image 1:1 */}
 				<div className="relative w-full" style={{ aspectRatio: "1/1" }}>
 					<div className="absolute inset-0">
@@ -145,7 +152,7 @@ function LotCard({ lot }: { lot: Lot }) {
 					)}
 					{lot.status === "SCHEDULED" && (
 						<div className="absolute top-2 left-2 z-10">
-							<span className="text-[10px] font-semibold text-[#0D0D0D] bg-white/90 px-2 py-0.5 rounded-full">
+							<span className="text-[10px] font-semibold bg-white/90 px-2 py-0.5 rounded-full" style={{ color: "#0D0D0D" }}>
 								Agendado
 							</span>
 						</div>
@@ -161,31 +168,31 @@ function LotCard({ lot }: { lot: Lot }) {
 
 				{/* Card body */}
 				<div className="p-3">
-					<p className="text-[11px] text-[#6B7280] mb-1 truncate">
+					<p className="text-[11px] mb-1 truncate" style={{ color: "var(--ink-muted)" }}>
 						{lot.category.replace(/_/g, " ")}
 					</p>
 					<h2
-						className="text-[15px] font-semibold leading-snug line-clamp-2 mb-3 text-[#0D0D0D]"
-						style={{ fontFamily: "var(--font-display)" }}
+						className="text-[15px] font-semibold leading-snug line-clamp-2 mb-3"
+						style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
 					>
 						{lot.title}
 					</h2>
 
-					<div className="border-t border-[#F0F0EE] pt-2.5 space-y-1.5">
+					<div className="pt-2.5 space-y-1.5" style={{ borderTop: "1px solid var(--subtle-bg2)" }}>
 						<div>
-							<p className="text-[9px] text-[#9CA3AF] tracking-wider uppercase mb-0.5">
+							<p className="text-[9px] tracking-wider uppercase mb-0.5" style={{ color: "var(--ink-subtle)" }}>
 								Licitação atual
 							</p>
 							<p
 								className="text-[19px] font-bold tabular-nums leading-none"
-								style={{ color: "#1D4ED8" }}
+								style={{ color: "var(--accent)" }}
 							>
 								{formatCents(bidCents)}
 							</p>
 						</div>
 						<p
 							className="text-xs font-medium"
-							style={{ color: timeLeft.urgent ? "#DC2626" : "#6B7280" }}
+							style={{ color: timeLeft.urgent ? "var(--live)" : "var(--ink-muted)" }}
 						>
 							{timeLeft.text}
 						</p>
@@ -282,10 +289,10 @@ function SectionRow({
 	return (
 		<section className="mb-10 group/row">
 			<div className="flex items-center justify-between mb-4">
-				<h2 className="flex items-center gap-2 text-lg font-bold text-[#0D0D0D]">
+				<h2 className="flex items-center gap-2 text-lg font-bold" style={{ color: "var(--ink)" }}>
 					{icon}
 					{title}
-					<span className="text-sm font-normal text-[#9CA3AF]">({sectionLots.length})</span>
+					<span className="text-sm font-normal" style={{ color: "var(--ink-subtle)" }}>({sectionLots.length})</span>
 				</h2>
 			</div>
 			<div className="relative">
@@ -295,12 +302,12 @@ function SectionRow({
 					onClick={() => scroll("left")}
 					aria-label="Anterior"
 					className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10
-						w-9 h-9 rounded-full bg-white border border-[#E4E4E2] shadow-md
+						w-9 h-9 rounded-full shadow-md
 						flex items-center justify-center
-						opacity-0 group-hover/row:opacity-100 transition-opacity duration-200
-						hover:bg-[#F3F4F6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+						opacity-0 group-hover/row:opacity-100 transition-opacity duration-200"
+					style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--ink)" }}
 				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D0D0D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
 						<path d="M15 18l-6-6 6-6"/>
 					</svg>
 				</button>
@@ -311,12 +318,12 @@ function SectionRow({
 					onClick={() => scroll("right")}
 					aria-label="Próximo"
 					className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10
-						w-9 h-9 rounded-full bg-white border border-[#E4E4E2] shadow-md
+						w-9 h-9 rounded-full shadow-md
 						flex items-center justify-center
-						opacity-0 group-hover/row:opacity-100 transition-opacity duration-200
-						hover:bg-[#F3F4F6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#1D4ED8]"
+						opacity-0 group-hover/row:opacity-100 transition-opacity duration-200"
+					style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--ink)" }}
 				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D0D0D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
 						<path d="M9 18l6-6-6-6"/>
 					</svg>
 				</button>
@@ -339,15 +346,15 @@ function SectionRow({
 
 function LotCardSkeleton() {
 	return (
-		<div className="bg-white rounded-xl border border-[#E4E4E2] overflow-hidden animate-pulse">
-			<div className="w-full bg-[#F3F4F6]" style={{ aspectRatio: "1/1" }} />
+		<div className="rounded-xl overflow-hidden animate-pulse" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+			<div className="w-full" style={{ aspectRatio: "1/1", background: "var(--subtle-bg2)" }} />
 			<div className="p-3 space-y-2">
-				<div className="h-2.5 bg-[#F3F4F6] rounded w-1/3" />
-				<div className="h-4 bg-[#F3F4F6] rounded w-3/4" />
-				<div className="h-3.5 bg-[#F3F4F6] rounded w-1/2 mt-1" />
-				<div className="border-t border-[#F0F0EE] pt-2.5 space-y-1">
-					<div className="h-2 bg-[#F3F4F6] rounded w-1/4" />
-					<div className="h-6 bg-[#F3F4F6] rounded w-2/5" />
+				<div className="h-2.5 rounded w-1/3" style={{ background: "var(--subtle-bg2)" }} />
+				<div className="h-4 rounded w-3/4" style={{ background: "var(--subtle-bg2)" }} />
+				<div className="h-3.5 rounded w-1/2 mt-1" style={{ background: "var(--subtle-bg2)" }} />
+				<div className="pt-2.5 space-y-1" style={{ borderTop: "1px solid var(--border)" }}>
+					<div className="h-2 rounded w-1/4" style={{ background: "var(--subtle-bg2)" }} />
+					<div className="h-6 rounded w-2/5" style={{ background: "var(--subtle-bg2)" }} />
 				</div>
 			</div>
 		</div>
@@ -357,6 +364,7 @@ function LotCardSkeleton() {
 export function LotsPage() {
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [timeFilter, setTimeFilter] = useState<TimeFilter>("NONE");
+	const [query, setQuery] = useState("");
 
 	// Derive filter from URL so nav tab links work
 	const urlStatus = searchParams.get("status");
@@ -389,25 +397,34 @@ export function LotsPage() {
 	});
 
 	const allLots = data?.items.filter((l) => l.status !== "CANCELLED") ?? [];
-	const liveLots = allLots.filter((l) => l.status === "LIVE");
+	const liveLots = allLots.filter((l) => {
+		if (l.status !== "LIVE") return false;
+		const nowMs = Date.now();
+		const s = l.startsAt ? new Date(l.startsAt).getTime() : 0;
+		const e = l.endsAt ? new Date(l.endsAt).getTime() : 0;
+		return s <= nowMs && e > nowMs;
+	});
 	const scheduledLots = allLots.filter((l) => l.status === "SCHEDULED");
 	const closedLots = allLots.filter((l) => l.status === "CLOSED");
 	const heroLot = liveLots[0] ?? scheduledLots[0] ?? null;
 
-	const filtered = allLots;
+	const q = query.trim().toLowerCase();
+	const filtered = q
+		? allLots.filter((l) => l.title.toLowerCase().includes(q))
+		: allLots;
 
-	const hasActiveFilter = filter !== "ALL" || timeFilter !== "NONE" || !!urlCategory;
+	const hasActiveFilter = filter !== "ALL" || timeFilter !== "NONE" || !!urlCategory || !!q;
 
 	if (isLoading) {
 		return (
-			<div className="max-w-7xl mx-auto px-6 py-8">
-				<div className="w-full h-48 bg-[#F3F4F6] rounded-2xl animate-pulse mb-10" />
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+				<div className="w-full h-48 rounded-2xl animate-pulse mb-10" style={{ background: "var(--subtle-bg2)" }} />
 				<div className="flex gap-2 mb-8">
 					{Array.from({ length: 5 }).map((_, i) => (
-						<div key={i} className="h-8 w-24 bg-[#F3F4F6] rounded-full animate-pulse" />
+						<div key={i} className="h-8 w-24 rounded-full animate-pulse" style={{ background: "var(--subtle-bg2)" }} />
 					))}
 				</div>
-				<div className="mb-4 h-5 w-32 bg-[#F3F4F6] rounded animate-pulse" />
+				<div className="mb-4 h-5 w-32 rounded animate-pulse" style={{ background: "var(--subtle-bg2)" }} />
 				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{Array.from({ length: 8 }).map((_, i) => (
 						<LotCardSkeleton key={i} />
@@ -419,20 +436,58 @@ export function LotsPage() {
 
 	if (error) {
 		return (
-			<div className="flex items-center justify-center h-64 text-sm text-[#DC2626]">
+			<div className="flex items-center justify-center h-64 text-sm" style={{ color: "var(--live)" }}>
 				Falha ao carregar lotes.
 			</div>
 		);
 	}
 
 	return (
-		<div className="max-w-7xl mx-auto px-6 py-8">
+		<div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 			{/* Hero */}
 			{heroLot && !hasActiveFilter && (
 				<div className="mb-10">
 					<HeroLot lot={heroLot} />
 				</div>
 			)}
+
+			{/* Search */}
+			<div className="relative mb-4 max-w-md">
+				<svg
+					className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+					width="16" height="16" viewBox="0 0 24 24" fill="none"
+					stroke="var(--ink-subtle)" strokeWidth="2"
+				>
+					<circle cx="11" cy="11" r="8"/>
+					<path d="m21 21-4.35-4.35"/>
+				</svg>
+				<input
+					type="text"
+					value={query}
+					onChange={(e) => setQuery(e.target.value)}
+					placeholder="Buscar lotes..."
+					className="w-full h-10 pl-9 pr-4 text-sm rounded-xl border transition-colors focus:outline-none focus:ring-2"
+					style={{
+						background: "var(--surface)",
+						color: "var(--ink)",
+						borderColor: "var(--border)",
+						"--tw-ring-color": "var(--accent)",
+					} as React.CSSProperties}
+				/>
+				{q && (
+					<button
+						type="button"
+						onClick={() => setQuery("")}
+						className="absolute right-3 top-1/2 -translate-y-1/2"
+						style={{ color: "var(--ink-subtle)" }}
+						aria-label="Limpar busca"
+					>
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+							<path d="M18 6L6 18M6 6l12 12"/>
+						</svg>
+					</button>
+				)}
+			</div>
 
 			{/* Filter chips */}
 			<div className="flex items-center gap-2 flex-wrap mb-8">
@@ -445,12 +500,12 @@ export function LotsPage() {
 							onClick={() => { setFilter("ALL"); setTimeFilter("NONE"); setSearchParams({}); }}
 							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
 							style={{
-								background: active ? "#0D0D0D" : "#FFFFFF",
-								color: active ? "#FFFFFF" : "#6B7280",
-								border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
+								background: active ? "var(--ink)" : "var(--surface)",
+								color: active ? "var(--ground)" : "var(--ink-muted)",
+								border: active ? "1px solid var(--ink)" : "1px solid var(--border)",
 							}}
 						>
-							<IconGrid color={active ? "#fff" : "#6B7280"} />
+							<IconGrid color={active ? "var(--ground)" : "var(--ink-muted)"} />
 							Todos
 						</button>
 					);
@@ -465,12 +520,12 @@ export function LotsPage() {
 							onClick={() => { setFilter(active ? "ALL" : "LIVE"); }}
 							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
 							style={{
-								background: active ? "#DC2626" : "#FFFFFF",
-								color: active ? "#FFFFFF" : "#6B7280",
-								border: active ? "1px solid #DC2626" : "1px solid #E4E4E2",
+								background: active ? "var(--live)" : "var(--surface)",
+								color: active ? "#FFFFFF" : "var(--ink-muted)",
+								border: active ? "1px solid var(--live)" : "1px solid var(--border)",
 							}}
 						>
-							<span className="w-2 h-2 rounded-full" style={{ background: active ? "#fff" : "#DC2626" }} />
+							<span className="w-2 h-2 rounded-full" style={{ background: active ? "#fff" : "var(--live)" }} />
 							Livestream
 						</button>
 					);
@@ -485,12 +540,12 @@ export function LotsPage() {
 							onClick={() => setTimeFilter(active ? "NONE" : "ENDS_TODAY")}
 							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
 							style={{
-								background: active ? "#0D0D0D" : "#FFFFFF",
-								color: active ? "#FFFFFF" : "#6B7280",
-								border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
+								background: active ? "var(--ink)" : "var(--surface)",
+								color: active ? "var(--ground)" : "var(--ink-muted)",
+								border: active ? "1px solid var(--ink)" : "1px solid var(--border)",
 							}}
 						>
-							<IconClock color={active ? "#fff" : "#6B7280"} />
+							<IconClock color={active ? "var(--ground)" : "var(--ink-muted)"} />
 							Termina hoje
 						</button>
 					);
@@ -505,14 +560,14 @@ export function LotsPage() {
 							onClick={() => setFilter(active ? "ALL" : "SCHEDULED")}
 							className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
 							style={{
-								background: active ? "#0D0D0D" : "#FFFFFF",
-								color: active ? "#FFFFFF" : "#6B7280",
-								border: active ? "1px solid #0D0D0D" : "1px solid #E4E4E2",
+								background: active ? "var(--ink)" : "var(--surface)",
+								color: active ? "var(--ground)" : "var(--ink-muted)",
+								border: active ? "1px solid var(--ink)" : "1px solid var(--border)",
 							}}
 						>
 							<svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
-								<circle cx="6.5" cy="6.5" r="5.5" stroke={active ? "#fff" : "#6B7280"} strokeWidth="1.5"/>
-								<path d="M4 6.5h5M8 4l2 2.5-2 2.5" stroke={active ? "#fff" : "#6B7280"} strokeWidth="1.2" strokeLinecap="round"/>
+								<circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.5"/>
+								<path d="M4 6.5h5M8 4l2 2.5-2 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
 							</svg>
 							Começa em breve
 						</button>
@@ -525,7 +580,7 @@ export function LotsPage() {
 						type="button"
 						onClick={() => setSearchParams({})}
 						className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
-						style={{ background: "#1D4ED8", color: "#fff", border: "1px solid #1D4ED8" }}
+						style={{ background: "var(--accent)", color: "#fff", border: "1px solid var(--accent)" }}
 					>
 						{LOT_CATEGORY_LABELS[urlCategory] ?? urlCategory}
 						<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
@@ -535,7 +590,7 @@ export function LotsPage() {
 				)}
 
 				{hasActiveFilter && (
-					<span className="text-xs text-[#6B7280] ml-2">
+					<span className="text-xs ml-2" style={{ color: "var(--ink-muted)" }}>
 						{allLots.length} {allLots.length === 1 ? "leilão" : "leilões"}
 					</span>
 				)}
@@ -545,7 +600,7 @@ export function LotsPage() {
 			{hasActiveFilter ? (
 				<>
 					{filtered.length === 0 ? (
-						<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6B7280]">
+						<div className="flex flex-col items-center justify-center py-24 text-sm" style={{ color: "var(--ink-muted)" }}>
 							Nenhum lote encontrado.
 						</div>
 					) : (
@@ -561,21 +616,21 @@ export function LotsPage() {
 				<>
 					<SectionRow
 						title="Leilões ao vivo"
-						icon={<span className="w-2.5 h-2.5 rounded-full bg-[#DC2626] animate-pulse" />}
+						icon={<span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ background: "var(--live)" }} />}
 						lots={liveLots}
 					/>
 					<SectionRow
 						title="Agendados"
-						icon={<IconClock color="#6B7280" />}
+						icon={<IconClock color="var(--ink-muted)" />}
 						lots={scheduledLots}
 					/>
 					<SectionRow
 						title="Encerrados"
-						icon={<IconCheck color="#6B7280" />}
+						icon={<IconCheck color="var(--ink-muted)" />}
 						lots={closedLots}
 					/>
 					{allLots.length === 0 && (
-						<div className="flex flex-col items-center justify-center py-24 text-sm text-[#6B7280]">
+						<div className="flex flex-col items-center justify-center py-24 text-sm" style={{ color: "var(--ink-muted)" }}>
 							Nenhum lote disponível no momento.
 						</div>
 					)}

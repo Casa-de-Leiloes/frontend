@@ -1,50 +1,66 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", "Geist", system-ui, sans-serif;
   --font-display: "Playfair Display", Georgia, serif;
   --font-mono: "Geist Mono", monospace;
 
-  /* Ground/surface */
-  --color-ground: #F5F4F0;
-  --color-surface: #FFFFFF;
-  --color-ink: #0D0D0D;
-  --color-muted: #6B7280;
-  --color-border: #E4E4E2;
-
   /* Brand */
-  --color-primary: #0D0D0D;
   --color-accent: #1D4ED8;
   --color-live: #DC2626;
   --color-positive: #16A34A;
   --color-negative: #DC2626;
 
-  /* shadcn compat aliases */
-  --color-background: #F5F4F0;
-  --color-foreground: #0D0D0D;
-  --color-muted-foreground: #6B7280;
-  --color-card: #FFFFFF;
+  /* shadcn compat */
   --color-destructive: #DC2626;
   --color-destructive-foreground: #FFFFFF;
-  --color-primary-foreground: #FFFFFF;
-  --color-secondary: #E4E4E2;
-  --color-secondary-foreground: #0D0D0D;
-  --color-accent-foreground: #FFFFFF;
-  --color-card-foreground: #0D0D0D;
-  --radius: 0.5rem;
+  --color-radius: 0.5rem;
   --font-serif: "Playfair Display", Georgia, serif;
+}
+
+/* ── Color tokens ─────────────────────────────── */
+:root {
+  --ink:        #0D0D0D;
+  --ink-muted:  #6B7280;
+  --ink-subtle: #9CA3AF;
+  --surface:    #FFFFFF;
+  --ground:     #F5F4F0;
+  --subtle-bg:  #F9F9F7;
+  --subtle-bg2: #F3F4F6;
+  --border:     #E4E4E2;
+  --border-2:   #D1D5DB;
+  --accent:     #1D4ED8;
+  --live:       #DC2626;
+  --positive:   #16A34A;
+}
+
+.dark {
+  --ink:        #F0EEE6;
+  --ink-muted:  #9CA3AF;
+  --ink-subtle: #6B7280;
+  --surface:    #1C1C1A;
+  --ground:     #111110;
+  --subtle-bg:  #1E1E1C;
+  --subtle-bg2: #252523;
+  --border:     #2D2D2B;
+  --border-2:   #3D3D3B;
+  --accent:     #3B82F6;
+  --live:       #EF4444;
+  --positive:   #22C55E;
 }
 
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-  border-color: #E4E4E2;
+  border-color: var(--border);
 }
 
 body {
-  background-color: #F5F4F0;
-  color: #0D0D0D;
+  background-color: var(--ground);
+  color: var(--ink);
   font-family: "Inter", "Geist", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

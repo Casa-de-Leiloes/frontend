@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 export function LoginPage() {
 	const navigate = useNavigate();
 	const setUser = useAuthStore((s) => s.setUser);
+	const setAuthLoading = useAuthStore((s) => s.setLoading);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
@@ -20,7 +21,7 @@ export function LoginPage() {
 		setError(null);
 		try {
 			const res = await auth.signIn(email, password);
-			if (res.user) setUser(res.user);
+			if (res.user) { setUser(res.user); setAuthLoading(false); }
 			navigate("/");
 		} catch (err) {
 			setError(translateError(err));

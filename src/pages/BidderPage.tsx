@@ -84,17 +84,17 @@ export function BidderPage() {
 	});
 
 	return (
-		<div className="min-h-screen bg-[#F5F4F0]">
+		<div className="min-h-screen bg-[var(--ground)]">
 			{/* Header */}
-			<div className="bg-white border-b border-[#E4E4E2]">
+			<div className="bg-[var(--surface)] border-b border-[var(--border)]">
 				<div className="max-w-4xl mx-auto px-6 py-6">
 					<div className="flex items-start justify-between gap-4 flex-wrap">
 						<div>
-							<p className="text-xs text-[#9CA3AF] font-medium tracking-wider uppercase mb-1">
+							<p className="text-xs text-[var(--ink-subtle)] font-medium tracking-wider uppercase mb-1">
 								Painel do Licitante
 							</p>
 							<h1
-								className="text-2xl font-bold text-[#0D0D0D]"
+								className="text-2xl font-bold text-[var(--ink)]"
 								style={{ fontFamily: "var(--font-display)" }}
 							>
 								Olá, {user?.name?.split(" ")[0] ?? "Licitante"}
@@ -104,7 +104,7 @@ export function BidderPage() {
 						{/* Balance highlight */}
 						<div className="flex items-center gap-3">
 							<div className="text-right">
-								<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider">
+								<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider">
 									Saldo disponível
 								</p>
 								<p
@@ -176,7 +176,7 @@ export function BidderPage() {
 								</p>
 							)}
 							{depositError && (
-								<p className="mt-2 text-xs text-[#DC2626]">{depositError}</p>
+								<p className="mt-2 text-xs text-[var(--live)]">{depositError}</p>
 							)}
 						</div>
 					)}
@@ -186,54 +186,54 @@ export function BidderPage() {
 			<div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
 				{/* Stats */}
 				<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4">
+						<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider mb-1.5">
 							Arremates
 						</p>
-						<p className="text-3xl font-bold text-[#1D4ED8] tabular-nums">
+						<p className="text-3xl font-bold text-[var(--accent)] tabular-nums">
 							{wins?.length ?? 0}
 						</p>
 					</div>
-					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4">
+						<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider mb-1.5">
 							Lances ativos
 						</p>
-						<p className="text-3xl font-bold text-[#DC2626] tabular-nums">
+						<p className="text-3xl font-bold text-[var(--live)] tabular-nums">
 							{activeBidLots.length}
 						</p>
 					</div>
-					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4">
+						<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider mb-1.5">
 							Total gasto
 						</p>
-						<p className="text-lg font-bold text-[#0D0D0D] tabular-nums leading-tight mt-1">
+						<p className="text-lg font-bold text-[var(--ink)] tabular-nums leading-tight mt-1">
 							{formatCents(String(totalSpent))}
 						</p>
 					</div>
-					<div className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4">
-						<p className="text-[11px] text-[#9CA3AF] font-medium uppercase tracking-wider mb-1.5">
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4">
+						<p className="text-[11px] text-[var(--ink-subtle)] font-medium uppercase tracking-wider mb-1.5">
 							Reservado
 						</p>
-						<p className="text-lg font-bold text-[#9CA3AF] tabular-nums leading-tight mt-1">
+						<p className="text-lg font-bold text-[var(--ink-subtle)] tabular-nums leading-tight mt-1">
 							{balance ? formatCents(balance.committedCents) : "-"}
 						</p>
 					</div>
 				</div>
 
 				{/* Active bids */}
-				<div className="bg-white rounded-xl border border-[#E4E4E2] overflow-hidden">
+				<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden">
 					<div className="px-6 py-4 border-b border-[#F3F4F6] flex items-center justify-between">
-						<h2 className="text-base font-semibold text-[#0D0D0D]">
+						<h2 className="text-base font-semibold text-[var(--ink)]">
 							Lances ativos
 							{activeBidLots.length > 0 && (
-								<span className="ml-2 text-sm font-normal text-[#9CA3AF]">
+								<span className="ml-2 text-sm font-normal text-[var(--ink-subtle)]">
 									{activeBidLots.length}
 								</span>
 							)}
 						</h2>
 						<Link
 							to="/?status=LIVE"
-							className="text-xs text-[#1D4ED8] hover:underline font-medium"
+							className="text-xs text-[var(--accent)] hover:underline font-medium"
 						>
 							Ver todos ao vivo →
 						</Link>
@@ -255,10 +255,10 @@ export function BidderPage() {
 								<path d="M5.6 5.6a9 9 0 0 0 0 12.8" />
 								<path d="M18.4 5.6a9 9 0 0 1 0 12.8" />
 							</svg>
-							<p className="text-sm text-[#9CA3AF]">Nenhum lance ativo.</p>
+							<p className="text-sm text-[var(--ink-subtle)]">Nenhum lance ativo.</p>
 							<Link
 								to="/?status=LIVE"
-								className="mt-2 inline-block text-sm text-[#1D4ED8] hover:underline font-medium"
+								className="mt-2 inline-block text-sm text-[var(--accent)] hover:underline font-medium"
 							>
 								Ver leilões ao vivo →
 							</Link>
@@ -279,7 +279,7 @@ export function BidderPage() {
 										key={lot.id}
 										className="flex items-center gap-4 px-6 py-4 hover:bg-[#FAFAFA] transition-colors"
 									>
-										<div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-[#F5F4F0]">
+										<div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-[var(--ground)]">
 											{proxyUrl ? (
 												<img
 													src={proxyUrl}
@@ -307,7 +307,7 @@ export function BidderPage() {
 										<div className="flex-1 min-w-0">
 											<Link
 												to={`/lots/${lot.id}`}
-												className="text-sm font-semibold text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors line-clamp-1"
+												className="text-sm font-semibold text-[var(--ink)] hover:text-[var(--accent)] transition-colors line-clamp-1"
 											>
 												{lot.title}
 											</Link>
@@ -323,14 +323,14 @@ export function BidderPage() {
 														lot.currentBidCents ?? lot.startingBidCents,
 													)}
 												</span>
-												<span className="text-xs text-[#9CA3AF]">
+												<span className="text-xs text-[var(--ink-subtle)]">
 													{lot.bidCount} lance{lot.bidCount !== 1 ? "s" : ""}
 												</span>
 											</div>
 										</div>
 										<div className="flex items-center gap-2.5 flex-shrink-0">
 											{isLeading ? (
-												<span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#DCFCE7] text-[#16A34A]">
+												<span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#DCFCE7] text-[var(--positive)]">
 													<svg
 														width="9"
 														height="9"
@@ -349,12 +349,12 @@ export function BidderPage() {
 													Superado
 												</span>
 											)}
-											<span className="text-xs text-[#9CA3AF] tabular-nums w-14 text-right">
+											<span className="text-xs text-[var(--ink-subtle)] tabular-nums w-14 text-right">
 												{timeLeft(lot.endsAt)}
 											</span>
 											<Link
 												to={`/lots/${lot.id}`}
-												className="text-xs font-medium text-[#1D4ED8] hover:underline"
+												className="text-xs font-medium text-[var(--accent)] hover:underline"
 											>
 												Licitar →
 											</Link>
@@ -368,17 +368,17 @@ export function BidderPage() {
 
 				{/* Recent wins */}
 				{wins && wins.length > 0 && (
-					<div className="bg-white rounded-xl border border-[#E4E4E2] overflow-hidden">
+					<div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] overflow-hidden">
 						<div className="px-6 py-4 border-b border-[#F3F4F6] flex items-center justify-between">
-							<h2 className="text-base font-semibold text-[#0D0D0D]">
+							<h2 className="text-base font-semibold text-[var(--ink)]">
 								Arremates
-								<span className="ml-2 text-sm font-normal text-[#9CA3AF]">
+								<span className="ml-2 text-sm font-normal text-[var(--ink-subtle)]">
 									{wins.length}
 								</span>
 							</h2>
 							<Link
 								to="/activity"
-								className="text-xs text-[#1D4ED8] hover:underline font-medium"
+								className="text-xs text-[var(--accent)] hover:underline font-medium"
 							>
 								Ver histórico completo →
 							</Link>
@@ -391,7 +391,7 @@ export function BidderPage() {
 								>
 									<Link
 										to={`/lots/${win.lotId}`}
-										className="text-sm font-semibold text-[#0D0D0D] hover:text-[#1D4ED8] transition-colors"
+										className="text-sm font-semibold text-[var(--ink)] hover:text-[var(--accent)] transition-colors"
 									>
 										Lote #{win.lotId.slice(-8).toUpperCase()}
 									</Link>
@@ -405,13 +405,13 @@ export function BidderPage() {
 										>
 											{formatCents(win.amountCents)}
 										</span>
-										<span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#DCFCE7] text-[#16A34A]">
+										<span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#DCFCE7] text-[var(--positive)]">
 											Arrematado
 										</span>
 										{win.receiptToken && (
 											<Link
 												to={`/receipt/${win.receiptToken}`}
-												className="text-xs text-[#1D4ED8] hover:underline"
+												className="text-xs text-[var(--accent)] hover:underline"
 											>
 												Comprovante
 											</Link>
@@ -427,7 +427,7 @@ export function BidderPage() {
 				<div className="grid grid-cols-2 gap-4">
 					<Link
 						to="/wallet"
-						className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4 flex items-center gap-3 hover:border-[#1D4ED8] transition-colors group"
+						className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4 flex items-center gap-3 hover:border-[var(--accent)] transition-colors group"
 					>
 						<div className="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center flex-shrink-0">
 							<svg
@@ -444,15 +444,15 @@ export function BidderPage() {
 							</svg>
 						</div>
 						<div>
-							<p className="text-sm font-semibold text-[#0D0D0D] group-hover:text-[#1D4ED8] transition-colors">
+							<p className="text-sm font-semibold text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors">
 								Minha Carteira
 							</p>
-							<p className="text-xs text-[#9CA3AF]">Extrato e depósitos</p>
+							<p className="text-xs text-[var(--ink-subtle)]">Extrato e depósitos</p>
 						</div>
 					</Link>
 					<Link
 						to="/activity"
-						className="bg-white rounded-xl border border-[#E4E4E2] px-5 py-4 flex items-center gap-3 hover:border-[#1D4ED8] transition-colors group"
+						className="bg-[var(--surface)] rounded-xl border border-[var(--border)] px-5 py-4 flex items-center gap-3 hover:border-[var(--accent)] transition-colors group"
 					>
 						<div className="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center flex-shrink-0">
 							<svg
@@ -469,10 +469,10 @@ export function BidderPage() {
 							</svg>
 						</div>
 						<div>
-							<p className="text-sm font-semibold text-[#0D0D0D] group-hover:text-[#1D4ED8] transition-colors">
+							<p className="text-sm font-semibold text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors">
 								Minha Atividade
 							</p>
-							<p className="text-xs text-[#9CA3AF]">Histórico de lances</p>
+							<p className="text-xs text-[var(--ink-subtle)]">Histórico de lances</p>
 						</div>
 					</Link>
 				</div>
